@@ -1,0 +1,5 @@
+{
+  "name": "Smart PDF Tagger",
+  "description": "A visual PDF inspection tool allowing users to draw bounding boxes, tag specific regions, and utilize Gemini AI for automatic content recognition.",
+  "requestFramePermissions": []
+}
