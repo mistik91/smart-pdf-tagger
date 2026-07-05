@@ -3,6 +3,18 @@
   "private": true,
   "description": "PDF region tagging, project export, and desktop save workflows.",
   "author": "mistik91",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mistik91/smart-pdf-tagger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mistik91/smart-pdf-tagger/issues"
+  },
+  "homepage": "https://github.com/mistik91/smart-pdf-tagger#readme",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist-electron/main.js",

@@ -1,107 +1,93 @@
 # Smart PDF Tagger
 
-Smart PDF Tagger is a React app for marking regions in PDF files, naming those regions, assigning colors and tags, and exporting the result as project JSON, CSV, or an annotated PDF.
+<p align="center">
+  <img src="assets/app-icon.png" alt="Smart PDF Tagger icon" width="96" height="96" />
+</p>
 
-The app runs in the browser during normal development and also has a conservative Electron desktop shell for native project open, save, and Save As dialogs.
+<p align="center">
+  <strong>Annotate PDFs, organize tagged regions, and export clean project data.</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/mistik91/smart-pdf-tagger/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mistik91/smart-pdf-tagger?style=flat-square" /></a>
+  <img alt="React" src="https://img.shields.io/badge/React-18-61dafb?style=flat-square" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square" />
+  <img alt="Electron" src="https://img.shields.io/badge/Electron-43-47848f?style=flat-square" />
+</p>
 
-- Load a PDF and create a self-contained project.
-- Draw, move, resize, edit, delete, copy, paste, undo, and redo annotation boxes.
-- Add labels, descriptions, tags, colors, and visible comment indicators.
-- Configure duplicate-label behavior: block project-wide duplicates, block same-page duplicates, warn only, or allow duplicates.
-- Batch edit selected regions from the sidebar.
-- Search, filter by color/tag, and sort annotations by page, label, color, or update date.
-- Store project metadata: client, document type, status, and reviewer.
-- Save and reopen project JSON files with validation for invalid imports.
-- Use Save As to download a new project JSON without overwriting the current file handle.
-- Manage PDF versions, copy tags into new versions, compare/sync versions, and rename versions.
-- Apply, edit, import, and export reusable tag template schemas.
-- Export annotations to CSV with selectable fields.
-- Export annotated PDFs with configurable labels, comments, and colors.
-- Use Browser Storage for local project persistence.
-- Run as a desktop app with native project open, save, and Save As dialogs.
-- Optionally use Gemini to suggest labels for selected PDF regions.
-- Use OneDrive for account-backed project storage when configured.
+Smart PDF Tagger is a focused PDF annotation tool for marking document regions, attaching labels and comments, managing versions, and exporting the result as project JSON, CSV, or annotated PDF.
 
-## Tech Stack
+It runs as a browser app during development and ships as an Electron desktop app for native project open, save, and Save As workflows.
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- PDF.js for rendering
-- pdf-lib for PDF export
-- Electron and electron-builder for the desktop shell
-- Vitest and Testing Library for unit/smoke tests
-- Playwright for real-browser PDF workflow tests
+## Highlights
+
+- PDF region annotation with draw, move, resize, edit, copy/paste, undo, and redo.
+- Labels, descriptions, tags, colors, visible comment indicators, and duplicate detection rules.
+- Search, filtering, batch edits, annotation sorting, and reusable tag templates.
+- Project metadata fields for client, document type, status, and reviewer.
+- Version management for updated PDFs, including tag copying and version switching.
+- Export controls for JSON, CSV fields, and annotated PDFs with labels, comments, and colors.
+- Optional Gemini-assisted label suggestions and optional OneDrive project storage.
+- Electron desktop build with native project file dialogs and a generated app icon.
+
+## Download
+
+The latest Windows installer is available from [GitHub Releases](https://github.com/mistik91/smart-pdf-tagger/releases/latest).
 
 ## Requirements
 
-- Node.js
-- npm
+- Node.js `>=22.12.0`
+- npm `>=10`
 - Google Chrome for `npm run test:browser`
-- Optional: a Gemini API key for AI auto-labeling
 
-## Setup
+## Quick Start
+
+For local development, install dependencies and start Vite:
 
 ```bash
 npm install
-cp .env.example .env.local
-```
-
-Then edit `.env.local` if you want AI auto-labeling:
-
-```bash
-GEMINI_API_KEY=your_api_key_here
-```
-
-The app still runs without a Gemini key.
-
-## Development
-
-```bash
 npm run dev
 ```
 
-Open the local URL printed by Vite, usually:
+Vite prints a local URL, usually:
 
 ```text
 http://localhost:3000
 ```
 
+## Configuration
+
+Create a local environment file only when you need optional integrations:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | No | Enables AI-assisted label suggestions. |
+
+The core PDF workflow runs without any environment variables.
+
 ## Desktop App
 
-Build the web app, compile the Electron main/preload files, and open the desktop app:
+Run the desktop shell locally:
 
 ```bash
 npm run electron:dev
 ```
 
-Create an unpacked local desktop build:
-
-```bash
-npm run electron:pack
-```
-
-Create a distributable installer package:
+Create a Windows installer:
 
 ```bash
 npm run electron:dist
 ```
 
-Desktop package output defaults to a temporary `smart-pdf-tagger-release` folder so Windows-controlled workspace folders do not block Electron Builder's final rename step. Set `ELECTRON_BUILDER_OUTPUT` to choose another output folder:
+By default, Electron Builder writes release artifacts to `%TEMP%\smart-pdf-tagger-release`. Set `ELECTRON_BUILDER_OUTPUT` to override the output directory.
 
-```bash
-$env:ELECTRON_BUILDER_OUTPUT="E:\Documents\Codex\smart-pdf-tagger\release"
-npm run electron:pack
-```
+## Quality Gates
 
-The desktop app icon lives in `assets/app-icon.png` and `assets/app-icon.ico`.
-
-## Quality Checks
-
-Run the full pre-upload check set:
+Run the full verification set before publishing changes:
 
 ```bash
 npm run test
@@ -112,104 +98,29 @@ npm run test:electron
 npm audit --audit-level=moderate
 ```
 
-`npm run test:browser` uses Playwright and looks for a PDF in the Downloads folder. To use a deterministic fixture:
+## Documentation
 
-```bash
-$env:SMART_PDF_TEST_FILE="E:\Downloads\your-file.pdf"
-npm run test:browser
-```
+- [Architecture](docs/ARCHITECTURE.md)
+- [Testing](docs/TESTING.md)
+- [Release process](docs/RELEASE.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+- [Security](SECURITY.md)
 
-`npm run test:electron` builds the app, launches Electron with Playwright, verifies the preload bridge, and checks native project-save IPC without exposing Node.js to the renderer.
-
-## Release Build
-
-Use this sequence for a Windows release:
-
-```bash
-npm run test
-npm run typecheck
-npm run build
-npm run test:browser
-npm run test:electron
-npm audit --audit-level=moderate
-npm run electron:dist
-```
-
-The installer is written to:
+## Project Layout
 
 ```text
-%TEMP%\smart-pdf-tagger-release\Smart PDF Tagger Setup 1.0.0.exe
-```
-
-Publish that installer through GitHub Releases. Keep generated package folders out of git history.
-
-## Project Structure
-
-```text
-assets/          Static visual assets
+assets/          App icon and static visual assets
 components/      React UI components
-e2e/             Playwright browser workflow tests
-e2e-electron/    Playwright Electron smoke tests
-electron/        Electron main process and preload bridge
-hooks/           React state/model hooks
-services/        PDF export, cloud, and AI service adapters
+e2e/             Browser workflow tests
+e2e-electron/    Electron smoke tests
+electron/        Main process and preload bridge
+hooks/           React state and model hooks
+services/        PDF export, cloud, and AI adapters
 test/            Vitest setup
-utils/           Pure helpers and unit-tested business logic
+utils/           Pure helpers and business logic
 ```
 
-## Browser Test Coverage
+## Data Notes
 
-The Playwright suite exercises real PDF workflows:
-
-- PDF upload and canvas rendering
-- region drawing and resize handles
-- labels, comments, tags, and visible sidebar state
-- export options
-- Save As prompt and JSON download
-- keyboard shortcuts modal
-- metadata and duplicate-rule settings
-- template import/export and template application
-- CSV download content
-- new PDF version upload with copied tags
-- version renaming
-- duplicate-label blocking
-- friendly errors for invalid project/template JSON imports
-
-## Electron Design
-
-- `electron/main.ts` owns the desktop window and native file dialogs.
-- `electron/preload.cts` exposes a narrow `window.electronAPI` bridge for project open, save, and Save As.
-- The React renderer detects the bridge and falls back to browser downloads/uploads when it is not present.
-- The desktop window keeps `contextIsolation` enabled and `nodeIntegration` disabled.
-- External links are handed to the operating system shell instead of opening inside the app window.
-
-## GitHub Upload Checklist
-
-1. Run the full quality checks above, including `npm run test:electron`.
-2. Confirm `.env.local`, `node_modules`, `dist`, `dist-electron`, `release`, `desktop-pack-test`, `test-results`, and Playwright reports are not staged.
-3. Initialize git if needed:
-
-```bash
-git init
-git add .
-git status
-git commit -m "Initial app baseline"
-```
-
-4. Create an empty GitHub repository.
-5. Add the remote and push:
-
-```bash
-git remote add origin https://github.com/<your-user>/<your-repo>.git
-git branch -M main
-git push -u origin main
-```
-
-## Notes
-
-- Project files embed PDF data as base64, so large PDFs produce large JSON files.
-- Browser Storage uses the current browser profile and is limited by browser storage quota.
-- OneDrive depends on a valid Microsoft app registration and redirect URI.
-- Gemini labeling requires network access and a configured API key.
-- Template fields are edited in Settings and saved in browser localStorage.
-- `dist-electron/`, `release/`, and temporary desktop package outputs are generated build outputs and should stay uncommitted.
+Project JSON files embed PDF data as base64, so large PDFs produce large project files. Browser storage is scoped to the current browser profile and is limited by browser quota. Desktop saves use the same project format through native file dialogs.
