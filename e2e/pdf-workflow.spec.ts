@@ -121,6 +121,17 @@ const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
 };
 
 test.describe('PDF annotation workflow', () => {
+  test('defaults the sidebar to regions for a one-page PDF', async ({ page }) => {
+    const pdfPath = await createMultipagePdfFixture(1);
+
+    await uploadPdf(page, pdfPath);
+
+    await expect(page.getByLabel('Sidebar view').getByRole('button', { name: 'Regions' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('No tags yet.')).toBeVisible();
+
+    fs.rmSync(pdfPath, { force: true });
+  });
+
   test('navigates a multipage PDF and keeps annotations scoped to their page', async ({ page }) => {
     const pdfPath = await createMultipagePdfFixture();
 
@@ -207,6 +218,7 @@ test.describe('PDF annotation workflow', () => {
     await expect(page.getByRole('button', { name: 'Single Page View' })).toHaveClass(/bg-primary/);
     await expect.poll(() => canvasHasPaintedPage(page.locator('canvas').first())).toBe(true);
 
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Pages' }).click();
     const lastPageButton = page.getByRole('button', { name: 'Go to page 18' });
     await lastPageButton.scrollIntoViewIfNeeded();
     await expect(lastPageButton).toBeVisible();

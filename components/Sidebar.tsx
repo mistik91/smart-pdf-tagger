@@ -47,12 +47,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenMigration,
   onBatchEdit
 }) => {
+  const defaultSidebarView = pageCount <= 1 || viewMode === ViewMode.SINGLE ? 'regions' : 'pages';
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchColor, setBatchColor] = useState("");
   const [batchDescription, setBatchDescription] = useState("");
   const [batchTags, setBatchTags] = useState("");
   const [sortMode, setSortMode] = useState<AnnotationSortMode>('page');
-  const [sidebarView, setSidebarView] = useState<'pages' | 'regions'>(viewMode === ViewMode.SINGLE ? 'regions' : 'pages');
+  const [sidebarView, setSidebarView] = useState<'pages' | 'regions'>(defaultSidebarView);
   const [isVersionControlOpen, setIsVersionControlOpen] = useState(false);
   const activeVersion = project?.versions.find(version => version.id === project.activeVersionId);
   const [versionNameDraft, setVersionNameDraft] = useState(activeVersion?.name || '');
@@ -60,6 +61,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     setVersionNameDraft(activeVersion?.name || '');
   }, [activeVersion?.id, activeVersion?.name]);
+
+  useEffect(() => {
+    setSidebarView(defaultSidebarView);
+  }, [defaultSidebarView, project?.activeVersionId]);
 
   const topTags = useMemo(() => {
     const counts: Record<string, number> = {};
