@@ -1,6 +1,35 @@
 
 import { GoogleGenAI } from "@google/genai";
 
+const GEMINI_API_KEY_STORAGE_KEY = 'smart_pdf_tagger_gemini_api_key';
+
+export const loadGeminiApiKey = () => {
+  try {
+    return localStorage.getItem(GEMINI_API_KEY_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+export const saveGeminiApiKey = (apiKey: string) => {
+  localStorage.setItem(GEMINI_API_KEY_STORAGE_KEY, apiKey.trim());
+};
+
+const getConfiguredApiKey = () => {
+  const savedKey = loadGeminiApiKey();
+  if (savedKey) return savedKey;
+
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+    }
+  } catch {
+    console.warn("Could not access process.env");
+  }
+
+  return '';
+};
+
 /**
  * Analyzes a specific cropped image region to suggest a label or content description.
  * @param base64Image The base64 encoded image string (JPEG/PNG)
@@ -8,15 +37,9 @@ import { GoogleGenAI } from "@google/genai";
  */
 export const analyzeImageRegion = async (base64Image: string): Promise<string> => {
   try {
-    // Safely retrieve API Key without crashing if 'process' is undefined
-    let apiKey = '';
-    try {
-      if (typeof process !== 'undefined' && process.env) {
-        apiKey = process.env.API_KEY || '';
-      }
-    } catch (e) {
-      // Ignore process access errors
-      console.warn("Could not access process.env");
+    const apiKey = getConfiguredApiKey();
+    if (!apiKey) {
+      throw new Error('Add a Gemini API key in Settings to use AI analysis.');
     }
 
     // Initialize the client lazily
@@ -45,7 +68,6 @@ export const analyzeImageRegion = async (base64Image: string): Promise<string> =
     return response.text?.trim() || "Unknown Region";
   } catch (error) {
     console.error("Error analyzing image region:", error);
-    // Return a safe fallback instead of throwing to prevent app interruption
-    return "Analysis Failed";
+    throw error;
   }
 };

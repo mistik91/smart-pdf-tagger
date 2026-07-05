@@ -132,6 +132,44 @@ test.describe('PDF annotation workflow', () => {
     fs.rmSync(pdfPath, { force: true });
   });
 
+  test('keeps the edit popup inside the rendered PDF page', async ({ page }) => {
+    const pdfPath = await createMultipagePdfFixture(1);
+    const { pageLayer } = await uploadPdf(page, pdfPath);
+
+    const pageBox = await pageLayer.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    });
+
+    await page.mouse.move(pageBox.x + pageBox.width * 0.62, pageBox.y + pageBox.height * 0.12);
+    await page.mouse.down();
+    await page.mouse.move(pageBox.x + pageBox.width * 0.9, pageBox.y + pageBox.height * 0.5, { steps: 8 });
+    await page.mouse.up();
+
+    const popup = page.locator('.box-controls');
+    await expect(popup).toBeVisible();
+
+    await expect.poll(async () => {
+      return page.evaluate(() => {
+        const popupEl = document.querySelector('.box-controls');
+        const pageEl = document.querySelector('[data-testid="pdf-page"][data-page="1"]');
+        if (!popupEl || !pageEl) return false;
+
+        const popupRect = popupEl.getBoundingClientRect();
+        const pageRect = pageEl.getBoundingClientRect();
+        const tolerance = 2;
+        return (
+          popupRect.left >= pageRect.left - tolerance &&
+          popupRect.top >= pageRect.top - tolerance &&
+          popupRect.right <= pageRect.right + tolerance &&
+          popupRect.bottom <= pageRect.bottom + tolerance
+        );
+      });
+    }).toBe(true);
+
+    fs.rmSync(pdfPath, { force: true });
+  });
+
   test('navigates a multipage PDF and keeps annotations scoped to their page', async ({ page }) => {
     const pdfPath = await createMultipagePdfFixture();
 

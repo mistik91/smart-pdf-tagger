@@ -109,6 +109,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     color: TAG_COLORS[2] // Default Emerald
   });
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Calculate available unique tags from all boxes for suggestions
   const suggestedTags = useMemo(() => {
@@ -373,6 +374,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           color: box.color || TAG_COLORS[2]
         });
         setValidationError(null);
+        setAnalysisError(null);
       }
     }
   }, [activeBoxId, boxes]);
@@ -681,6 +683,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (!sourceCanvas || !dimensions) return;
 
     setIsAnalyzing(true);
+    setAnalysisError(null);
     try {
       const tempCanvas = document.createElement('canvas');
       const ctx = tempCanvas.getContext('2d');
@@ -704,7 +707,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
     } catch (error) {
       console.error("AI Analysis failed", error);
-      alert("Failed to analyze image. Check console.");
+      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze image.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -821,18 +824,40 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           const currentWidth = isResizingThis && resizeCurrent ? resizeCurrent.width : box.width;
           const currentHeight = isResizingThis && resizeCurrent ? resizeCurrent.height : box.height;
 
-          const boxTopPx = (currentY / 100) * (dimensions?.h || 0);
-          const boxBottomPx = boxTopPx + (currentHeight / 100) * (dimensions?.h || 0);
+          const pageWidthPx = dimensions?.w || 0;
+          const pageHeightPx = dimensions?.h || 0;
+          const boxLeftPx = (currentX / 100) * pageWidthPx;
+          const boxTopPx = (currentY / 100) * pageHeightPx;
+          const boxWidthPx = (currentWidth / 100) * pageWidthPx;
+          const boxBottomPx = boxTopPx + (currentHeight / 100) * pageHeightPx;
           const containerOffsetTop = pageElement?.offsetTop || 0;
           const visibleTop = (scrollContainerRef.current?.scrollTop || 0) - containerOffsetTop;
           const visibleBottom = visibleTop + (scrollContainerRef.current?.clientHeight || window.innerHeight);
           const spaceAbove = Math.max(0, boxTopPx - visibleTop);
           const spaceBelow = Math.max(0, visibleBottom - boxBottomPx);
-          const preferredPopupHeight = 345;
+          const preferredPopupWidth = 290;
+          const preferredPopupHeight = templateGroupEntries.length > 0 ? 345 : 322;
           const showControlsBelow = spaceBelow >= preferredPopupHeight || spaceBelow >= spaceAbove;
-          const availablePopupSpace = Math.max(220, (showControlsBelow ? spaceBelow : spaceAbove) - 16);
-          const popupScale = Math.max(0.82, Math.min(1, availablePopupSpace / preferredPopupHeight));
-          const alignRight = currentX > 60;
+          const pagePadding = 8;
+          const availablePopupSpace = Math.max(180, Math.min(
+            (showControlsBelow ? spaceBelow : spaceAbove) - 16,
+            pageHeightPx - (pagePadding * 2)
+          ));
+          const popupScale = Math.max(0.74, Math.min(1, availablePopupSpace / preferredPopupHeight));
+          const popupWidthPx = preferredPopupWidth * popupScale;
+          const popupHeightPx = preferredPopupHeight * popupScale;
+          const desiredPopupLeftPx = currentX > 60 ? boxLeftPx + boxWidthPx - popupWidthPx : boxLeftPx;
+          const popupLeftPx = Math.min(
+            Math.max(pagePadding, desiredPopupLeftPx),
+            Math.max(pagePadding, pageWidthPx - popupWidthPx - pagePadding)
+          );
+          const desiredPopupTopPx = showControlsBelow ? boxBottomPx + 12 : boxTopPx - popupHeightPx - 12;
+          const popupTopPx = Math.min(
+            Math.max(pagePadding, desiredPopupTopPx),
+            Math.max(pagePadding, pageHeightPx - popupHeightPx - pagePadding)
+          );
+          const popupRelativeLeftPx = popupLeftPx - boxLeftPx;
+          const popupRelativeTopPx = popupTopPx - boxTopPx;
           const resizeHandles: Array<{
             id: ResizeHandle;
             style: React.CSSProperties;
@@ -918,13 +943,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               {isActive && tool !== ToolState.HAND && !isPanning && !dragState && (
                 <div
                   className={`box-controls absolute bg-surface-container rounded-2xl shadow-xl border border-outline-variant p-3 w-[290px] animate-in fade-in zoom-in duration-200 z-50 flex flex-col gap-2
-                              ${showControlsBelow ? 'top-full mt-3' : 'bottom-full mb-3'}
-                              ${alignRight ? 'right-0' : 'left-0'}
                               cursor-default
                           `}
                   style={{
+                    left: popupRelativeLeftPx,
+                    top: popupRelativeTopPx,
                     transform: `scale(${popupScale})`,
-                    transformOrigin: `${alignRight ? 'right' : 'left'} ${showControlsBelow ? 'top' : 'bottom'}`
+                    transformOrigin: 'top left',
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -943,6 +968,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                       <span>Auto-Label</span>
                     </button>
                   </div>
+                  {analysisError && (
+                    <div className="flex items-start gap-1.5 text-red-500 text-xs rounded-lg bg-red-500/10 border border-red-500/30 px-2 py-1.5">
+                      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span>{analysisError}</span>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[11px] font-medium text-on-surface-variant mb-1 ml-1">Label</label>

@@ -12,6 +12,7 @@ import TemplateSettings from './components/TemplateSettings';
 import { Toolbar } from './components/Toolbar';
 import { DuplicateRule, ToolState, ViewMode } from './types';
 import { getCloudProvider } from './services/cloudService';
+import { loadGeminiApiKey, saveGeminiApiKey } from './services/geminiService';
 import { exportAnnotatedPdf } from './services/pdfExportService';
 import { useAnnotations } from './hooks/useAnnotations';
 import { useClipboard } from './hooks/useClipboard';
@@ -64,6 +65,7 @@ const App: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [duplicateRule, setDuplicateRule] = useState<DuplicateRule>(DuplicateRule.GLOBAL_BLOCK);
   const [tagTemplates, setTagTemplates] = useState<TagTemplateField[]>(() => loadTemplateFields());
+  const [geminiApiKey, setGeminiApiKey] = useState(() => loadGeminiApiKey());
   const [pageCount, setPageCount] = useState(1);
 
   // 3. Modals
@@ -100,6 +102,10 @@ const App: React.FC = () => {
   useEffect(() => {
     saveTemplateFields(tagTemplates);
   }, [tagTemplates]);
+
+  useEffect(() => {
+    saveGeminiApiKey(geminiApiKey);
+  }, [geminiApiKey]);
 
   useEffect(() => {
     saveRecentProjects(recentProjects);
@@ -696,6 +702,22 @@ const App: React.FC = () => {
               <div className="p-4 rounded-xl bg-secondary-container/30 text-xs text-on-surface-variant border border-outline-variant/30 flex items-start gap-2">
                 <div className="mt-0.5"><AlertCircle className="w-3.5 h-3.5" /></div>
                 Storage: Local Browser Storage (IndexedDB/LocalStorage)
+              </div>
+              <div className="rounded-xl border border-outline-variant bg-surface-container-high p-4 space-y-3">
+                <div>
+                  <h4 className="font-bold text-on-surface text-sm">AI Analysis</h4>
+                  <p className="text-xs text-on-surface-variant mt-1">Saved locally on this device and used for Auto-Label.</p>
+                </div>
+                <input
+                  aria-label="Gemini API key"
+                  type="password"
+                  value={geminiApiKey}
+                  onChange={e => setGeminiApiKey(e.target.value)}
+                  placeholder="Gemini API key"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full bg-surface-container-highest border border-outline-variant text-on-surface p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
               </div>
               <TemplateSettings
                 templates={tagTemplates}

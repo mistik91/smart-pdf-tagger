@@ -68,9 +68,9 @@ cp .env.example .env.local
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | No | Enables AI-assisted label suggestions. |
+| `GEMINI_API_KEY` | No | Enables AI-assisted label suggestions during local development. |
 
-The core PDF workflow runs without any environment variables.
+The packaged desktop app stores the Gemini key from Settings on the current device. The core PDF workflow runs without any environment variables.
 
 ## Desktop App
 

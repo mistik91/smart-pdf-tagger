@@ -4,6 +4,18 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.2.7 - 2026-07-05
+
+### Fixed
+
+- Kept the region edit popup inside the rendered PDF page bounds near page edges and large selections.
+- Added a desktop-safe Gemini API key setting so AI Auto-Label works in packaged builds instead of relying only on development environment variables.
+- AI analysis failures now show a clear inline message in the edit popup.
+
+### Verified
+
+- Unit tests, TypeScript checks, browser workflow tests with generated PDF fixtures, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+
 ## v1.2.6 - 2026-07-05
 
 ### Fixed
