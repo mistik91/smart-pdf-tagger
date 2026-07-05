@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Upload, Plus, Layers, ArrowRightLeft, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import emptyAnnotationImage from './assets/empty-annotation.png';
 import PdfViewer from './components/PdfViewer';
@@ -61,6 +61,7 @@ const App: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [duplicateRule, setDuplicateRule] = useState<DuplicateRule>(DuplicateRule.GLOBAL_BLOCK);
   const [tagTemplates, setTagTemplates] = useState<TagTemplateField[]>(() => loadTemplateFields());
+  const [pageCount, setPageCount] = useState(1);
 
   // 3. Modals
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
@@ -73,6 +74,11 @@ const App: React.FC = () => {
   // 4. Cloud Provider
   const [activeCloudProviderType, setActiveCloudProviderType] = useState<string>('browser');
   const cloudProvider = useMemo(() => getCloudProvider(activeCloudProviderType), [activeCloudProviderType]);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(Math.min(Math.max(1, page), Math.max(1, pageCount)));
+    setActiveBoxId(null);
+  }, [pageCount, setActiveBoxId, setCurrentPage]);
 
   // -- Connect Hooks --
 
@@ -107,6 +113,14 @@ const App: React.FC = () => {
         e.preventDefault();
         paste();
       }
+      if (e.key === 'PageUp' || (e.altKey && e.key === 'ArrowLeft')) {
+        e.preventDefault();
+        handlePageChange(currentPage - 1);
+      }
+      if (e.key === 'PageDown' || (e.altKey && e.key === 'ArrowRight')) {
+        e.preventDefault();
+        handlePageChange(currentPage + 1);
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (activeBoxId) {
           e.preventDefault();
@@ -116,7 +130,7 @@ const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copy, paste, deleteBox, activeBoxId]);
+  }, [undo, redo, copy, paste, deleteBox, activeBoxId, currentPage, handlePageChange]);
 
   // Auto-Save Orchestration (App Layer)
   // We need to pass the *current* boxes to the saver
@@ -147,7 +161,10 @@ const App: React.FC = () => {
 
   const handleVersionChange = async (vid: string) => {
     const newBoxes = await switchVersion(vid, boxes);
-    if (newBoxes) setBoxes(newBoxes);
+    if (newBoxes) {
+      setBoxes(newBoxes);
+      setPageCount(1);
+    }
   };
 
   const handleUploadNewVersionWrapped = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +174,7 @@ const App: React.FC = () => {
     if (!project) {
       await initializeProjectFromPdf(file);
       setBoxes([]); // Clear boxes for new project
+      setPageCount(1);
       setElectronProjectPath(null);
       e.target.value = '';
       return;
@@ -170,7 +188,10 @@ const App: React.FC = () => {
     }
 
     const newBoxes = await createNewVersion(file, boxes, shouldCopy);
-    if (newBoxes) setBoxes(newBoxes);
+    if (newBoxes) {
+      setBoxes(newBoxes);
+      setPageCount(1);
+    }
     e.target.value = '';
   };
 
@@ -183,6 +204,7 @@ const App: React.FC = () => {
         const data = parseProjectJson(result.text);
         const loadedBoxes = await loadProject(data, null);
         setBoxes(loadedBoxes);
+        setPageCount(1);
         setElectronProjectPath(result.filePath || null);
       } catch (error) {
         alert(error instanceof Error ? error.message : "Could not open project file.");
@@ -208,6 +230,7 @@ const App: React.FC = () => {
                 const data = parseProjectJson(res);
                 const loadedBoxes = await loadProject(data, null);
                 setBoxes(loadedBoxes);
+                setPageCount(1);
                 setElectronProjectPath(null);
               } catch (error) {
                 alert(error instanceof Error ? error.message : "Could not open project file.");
@@ -234,6 +257,7 @@ const App: React.FC = () => {
         const data = parseProjectJson(text);
         const loadedBoxes = await loadProject(data, handle);
         setBoxes(loadedBoxes);
+        setPageCount(1);
         setElectronProjectPath(null);
       } catch (e) {
         if (e instanceof Error && e.name !== 'AbortError') {
@@ -373,6 +397,7 @@ const App: React.FC = () => {
           onLoadProject={async (data) => {
             const loadedBoxes = await loadProject(data, null);
             setBoxes(loadedBoxes);
+            setPageCount(1);
             setIsCloudModalOpen(false);
           }}
           activeProviderType={activeCloudProviderType}
@@ -402,6 +427,9 @@ const App: React.FC = () => {
         onUndo={undo} onRedo={redo}
         onCopy={copy} onPaste={paste}
         hasClipboard={!!clipboard}
+        currentPage={currentPage}
+        pageCount={pageCount}
+        onPageChange={handlePageChange}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -410,7 +438,7 @@ const App: React.FC = () => {
           filteredBoxes={filteredBoxes}
           currentPage={currentPage}
           onDeleteBox={deleteBox}
-          onJumpToPage={setCurrentPage}
+          onJumpToPage={handlePageChange}
           onFocusBox={setActiveBoxId}
           onExportCsv={() => setIsExportOptionsOpen(true)}
           filterText={filterText}
@@ -431,7 +459,8 @@ const App: React.FC = () => {
             currentPage={currentPage}
             scale={scale}
             onZoom={setScale}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
+            onPageCountChange={setPageCount}
             boxes={boxes}
             visibleBoxes={filteredBoxes}
             activeBoxId={activeBoxId}
@@ -471,6 +500,7 @@ const App: React.FC = () => {
         onLoadProject={async (data) => {
           const loadedBoxes = await loadProject(data, null);
           setBoxes(loadedBoxes);
+          setPageCount(1);
           setIsCloudModalOpen(false);
         }}
         activeProviderType={activeCloudProviderType}

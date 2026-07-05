@@ -1,5 +1,5 @@
 import React from 'react';
-import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle } from 'lucide-react';
+import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ToolState } from '../types';
 
 interface ToolbarProps {
@@ -21,13 +21,34 @@ interface ToolbarProps {
     onCopy: () => void;
     onPaste: () => void;
     hasClipboard: boolean;
+    currentPage: number;
+    pageCount: number;
+    onPageChange: (page: number) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
     scale, onZoom, tool, setTool, isDarkMode, setIsDarkMode,
     onSave, onOpen, onExportPdf, onExportJson, onCloud, onSettings,
-    onUndo, onRedo, onCopy, onPaste, hasClipboard, onHelp
+    onUndo, onRedo, onCopy, onPaste, hasClipboard, onHelp,
+    currentPage, pageCount, onPageChange
 }) => {
+    const [pageInput, setPageInput] = React.useState(String(currentPage));
+    const canGoPrevious = currentPage > 1;
+    const canGoNext = pageCount > 0 && currentPage < pageCount;
+
+    React.useEffect(() => {
+        setPageInput(String(currentPage));
+    }, [currentPage]);
+
+    const commitPageInput = () => {
+        const requestedPage = Number.parseInt(pageInput, 10);
+        if (Number.isNaN(requestedPage)) {
+            setPageInput(String(currentPage));
+            return;
+        }
+        onPageChange(requestedPage);
+    };
+
     return (
         <div className="h-16 border-b border-outline-variant bg-surface-container flex items-center px-6 justify-between transition-colors duration-200 z-50 relative shadow-sm">
             {/* Left: File Actions */}
@@ -74,6 +95,46 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 <span className="text-sm font-bold w-14 text-center text-on-surface">{Math.round(scale * 100)}%</span>
                 <button onClick={() => onZoom(scale + 0.1)} aria-label="Zoom In" className="p-2 hover:bg-surface-container-highest rounded-full text-on-surface-variant transition-colors">
                     <ZoomIn className="w-5 h-5" />
+                </button>
+                <div className="w-px h-6 bg-outline-variant mx-1" />
+                <button
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={!canGoPrevious}
+                    aria-label="Previous Page"
+                    className={`p-2 rounded-full transition-colors ${canGoPrevious ? 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface' : 'text-outline-variant/50 cursor-not-allowed'}`}
+                    title="Previous page (PageUp)"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+                <label className="flex items-center gap-1 text-xs font-bold text-on-surface-variant">
+                    <span className="sr-only">Current page</span>
+                    <input
+                        aria-label="Current page"
+                        value={pageInput}
+                        onChange={(e) => setPageInput(e.target.value.replace(/[^\d]/g, ''))}
+                        onBlur={commitPageInput}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                            }
+                            if (e.key === 'Escape') {
+                                setPageInput(String(currentPage));
+                                e.currentTarget.blur();
+                            }
+                        }}
+                        className="h-8 w-12 rounded-full border border-outline-variant bg-surface-container-highest text-center text-sm font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                        inputMode="numeric"
+                    />
+                    <span aria-label="Page count" className="min-w-10 text-sm text-on-surface">/ {Math.max(pageCount, 1)}</span>
+                </label>
+                <button
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={!canGoNext}
+                    aria-label="Next Page"
+                    className={`p-2 rounded-full transition-colors ${canGoNext ? 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface' : 'text-outline-variant/50 cursor-not-allowed'}`}
+                    title="Next page (PageDown)"
+                >
+                    <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
 

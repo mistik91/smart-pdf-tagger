@@ -29,6 +29,7 @@ npm audit --audit-level=moderate
 The browser suite covers:
 
 - PDF upload and canvas rendering.
+- Multipage navigation, page clamping, keyboard page changes, and page-scoped annotations.
 - Region drawing and resize handles.
 - Labels, comments, tags, colors, and visible sidebar state.
 - Export options and CSV download content.

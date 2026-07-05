@@ -7,13 +7,15 @@ interface KeyboardShortcutsModalProps {
 }
 
 const shortcuts = [
-  ['Ctrl/⌘ + Z', 'Undo'],
-  ['Ctrl/⌘ + Shift + Z', 'Redo'],
-  ['Ctrl/⌘ + Y', 'Redo'],
-  ['Ctrl/⌘ + C', 'Copy selected region'],
-  ['Ctrl/⌘ + V', 'Paste copied region'],
+  ['Ctrl/Cmd + Z', 'Undo'],
+  ['Ctrl/Cmd + Shift + Z', 'Redo'],
+  ['Ctrl/Cmd + Y', 'Redo'],
+  ['Ctrl/Cmd + C', 'Copy selected region'],
+  ['Ctrl/Cmd + V', 'Paste copied region'],
+  ['PageUp / Alt + Left', 'Previous page'],
+  ['PageDown / Alt + Right', 'Next page'],
   ['Delete / Backspace', 'Delete selected region'],
-  ['Mouse wheel + Ctrl/⌘', 'Zoom PDF'],
+  ['Mouse wheel + Ctrl/Cmd', 'Zoom PDF'],
   ['Middle mouse / Hand tool', 'Pan PDF'],
 ];
 

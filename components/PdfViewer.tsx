@@ -13,6 +13,7 @@ interface PdfViewerProps {
   scale: number;
   onZoom: (scale: number) => void;
   onPageChange: (page: number) => void;
+  onPageCountChange: (pageCount: number) => void;
   boxes: BoundingBox[]; // All boxes for validation/logic
   visibleBoxes?: BoundingBox[]; // Filtered boxes for rendering
   activeBoxId: string | null;
@@ -35,6 +36,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   scale,
   onZoom,
   onPageChange,
+  onPageCountChange,
   boxes,
   visibleBoxes,
   activeBoxId,
@@ -148,6 +150,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
         if (!isCancelled) {
           setPdfDoc(doc);
+          onPageCountChange(doc.numPages);
           setIsLoading(false);
         }
       } catch (err) {
@@ -166,11 +169,18 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [pdfUrl]);
+  }, [pdfUrl, onPageCountChange]);
+
+  useEffect(() => {
+    if (!pdfDoc) return;
+    if (currentPage > pdfDoc.numPages) onPageChange(pdfDoc.numPages);
+    if (currentPage < 1) onPageChange(1);
+  }, [currentPage, pdfDoc, onPageChange]);
 
   // Render Page
   const renderPage = useCallback(async () => {
     if (!pdfDoc || !canvasRef.current) return;
+    if (currentPage < 1 || currentPage > pdfDoc.numPages) return;
 
     // 1. Cancel previous render task if it exists
     if (renderTaskRef.current) {
@@ -722,6 +732,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   cursor: tool === ToolState.DRAW && !isPanning ? 'move' : undefined
                 }}
                 onPointerDown={(e) => handleBoxPointerDown(e, box)}
+                data-testid="region-box"
+                data-region-page={box.page}
+                data-region-label={box.label}
               >
                 {/* Label Tag (Visible when not active) */}
                 {box.label && !isActive && (

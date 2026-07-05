@@ -2,6 +2,7 @@ import { expect, Locator, Page, test } from '@playwright/test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const findPdfFixture = () => {
   const explicitPath = process.env.SMART_PDF_TEST_FILE;
@@ -47,6 +48,33 @@ const uploadPdf = async (page: Page, pdfPath: string) => {
   return { canvas, pageLayer };
 };
 
+const createMultipagePdfFixture = async () => {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+
+  for (let pageNumber = 1; pageNumber <= 3; pageNumber += 1) {
+    const page = pdf.addPage([595, 842]);
+    page.drawText(`Multipage navigation fixture - page ${pageNumber}`, {
+      x: 72,
+      y: 760,
+      size: 20,
+      font,
+      color: rgb(0.05, 0.09, 0.11),
+    });
+    page.drawText(`This page exists to verify annotations stay scoped to page ${pageNumber}.`, {
+      x: 72,
+      y: 720,
+      size: 12,
+      font,
+      color: rgb(0.25, 0.3, 0.35),
+    });
+  }
+
+  const pdfPath = path.join(os.tmpdir(), `smart-pdf-tagger-multipage-${Date.now()}.pdf`);
+  fs.writeFileSync(pdfPath, await pdf.save());
+  return pdfPath;
+};
+
 const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
   const pageBox = await pageLayer.boundingBox();
   expect(pageBox).not.toBeNull();
@@ -66,6 +94,66 @@ const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
 };
 
 test.describe('PDF annotation workflow', () => {
+  test('navigates a multipage PDF and keeps annotations scoped to their page', async ({ page }) => {
+    const pdfPath = await createMultipagePdfFixture();
+
+    const { pageLayer } = await uploadPdf(page, pdfPath);
+
+    const currentPageInput = page.getByLabel('Current page');
+    await expect(currentPageInput).toHaveValue('1');
+    await expect(page.getByLabel('Page count')).toHaveText('/ 3');
+    await expect(page.getByRole('button', { name: 'Previous Page' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Next Page' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Next Page' }).click();
+    await expect(currentPageInput).toHaveValue('2');
+
+    await drawRegion(page, pageLayer);
+    await page.getByPlaceholder('e.g. Invoice Total').fill('Page Two Region');
+    await page.getByPlaceholder('Optional details...').fill('Only visible on page two.');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.locator('[data-testid="region-box"][data-region-page="2"]')).toHaveCount(1);
+    await expect(page.getByText('PAGE 2')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Previous Page' }).click();
+    await expect(currentPageInput).toHaveValue('1');
+    await expect(page.locator('[data-testid="region-box"]')).toHaveCount(0);
+
+    await page.keyboard.press('PageDown');
+    await expect(currentPageInput).toHaveValue('2');
+    await expect(page.locator('[data-testid="region-box"][data-region-label="Page Two Region"]')).toHaveCount(1);
+
+    await currentPageInput.fill('99');
+    await currentPageInput.press('Enter');
+    await expect(currentPageInput).toHaveValue('3');
+    await expect(page.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+
+    await currentPageInput.fill('0');
+    await currentPageInput.press('Enter');
+    await expect(currentPageInput).toHaveValue('1');
+
+    const saveAsDialog = page.waitForEvent('dialog');
+    await page.evaluate(() => {
+      window.setTimeout(() => {
+        document.querySelector<HTMLButtonElement>('[aria-label="Save As Project JSON"]')?.click();
+      }, 0);
+    });
+    const dialog = await saveAsDialog;
+    const downloadPromise = page.waitForEvent('download');
+    await dialog.accept('multipage-project');
+    const download = await downloadPromise;
+    const jsonPath = await download.path();
+    expect(jsonPath).toBeTruthy();
+
+    const project = JSON.parse(fs.readFileSync(jsonPath!, 'utf8'));
+    const activeVersion = project.versions.find((version: any) => version.id === project.activeVersionId);
+    expect(activeVersion.boxes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Page Two Region', page: 2 }),
+    ]));
+
+    fs.rmSync(pdfPath, { force: true });
+  });
+
   test('loads a real PDF, creates a commented region, and opens export options', async ({ page }) => {
     const pdfPath = findPdfFixture();
     test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
