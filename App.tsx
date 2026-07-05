@@ -3,6 +3,7 @@ import { Upload, Plus, Layers, ArrowRightLeft, Clock, CheckCircle, AlertCircle }
 import emptyAnnotationImage from './assets/empty-annotation.png';
 import PdfViewer from './components/PdfViewer';
 import Sidebar from './components/Sidebar';
+import RecentProjectsMenu from './components/RecentProjectsMenu';
 import TagMigrationModal from './components/TagMigrationModal';
 import CloudModal from './components/CloudModal';
 import ExportOptionsModal from './components/ExportOptionsModal';
@@ -18,6 +19,7 @@ import { useProjectModel } from './hooks/useProjectModel';
 import { parseProjectJson } from './utils/projectValidation';
 import { loadTemplateFields, saveTemplateFields, TagTemplateField } from './utils/tagTemplates';
 import { buildAnnotationCsv, CsvField, PdfExportOptions } from './utils/exportOptions';
+import { addRecentProject, loadRecentProjects, RecentProject, removeRecentProject, saveRecentProjects } from './utils/recentProjects';
 
 // Helper to detect if running in an iframe (where File System API is often blocked)
 const isRunningInIframe = () => {
@@ -71,6 +73,8 @@ const App: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isExportOptionsOpen, setIsExportOptionsOpen] = useState(false);
   const [electronProjectPath, setElectronProjectPath] = useState<string | null>(null);
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>(() => loadRecentProjects());
+  const [isRecentProjectsOpen, setIsRecentProjectsOpen] = useState(false);
 
   // 4. Cloud Provider
   const [activeCloudProviderType, setActiveCloudProviderType] = useState<string>('browser');
@@ -96,6 +100,10 @@ const App: React.FC = () => {
   useEffect(() => {
     saveTemplateFields(tagTemplates);
   }, [tagTemplates]);
+
+  useEffect(() => {
+    saveRecentProjects(recentProjects);
+  }, [recentProjects]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -200,17 +208,47 @@ const App: React.FC = () => {
     e.target.value = '';
   };
 
+  const rememberRecentProject = useCallback((filePath: string | undefined, projectName: string) => {
+    if (!filePath || !window.electronAPI) return;
+    setRecentProjects(prev => addRecentProject(prev, { filePath, name: projectName || 'Untitled Project' }));
+  }, []);
+
+  const forgetRecentProject = useCallback((filePath: string) => {
+    setRecentProjects(prev => removeRecentProject(prev, filePath));
+  }, []);
+
+  const clearRecentProjects = useCallback(() => {
+    setRecentProjects([]);
+  }, []);
+
+  const loadElectronProjectText = useCallback(async (text: string, filePath?: string) => {
+    const data = parseProjectJson(text);
+    const loadedBoxes = await loadProject(data, null);
+    setBoxes(loadedBoxes);
+    setPageCount(1);
+    setElectronProjectPath(filePath || null);
+    rememberRecentProject(filePath, data.name);
+    setIsRecentProjectsOpen(false);
+  }, [loadProject, rememberRecentProject, setBoxes]);
+
+  const handleOpenRecentProject = useCallback(async (filePath: string) => {
+    if (!window.electronAPI?.openProjectPath) return;
+    try {
+      const result = await window.electronAPI.openProjectPath(filePath);
+      if (result.canceled || !result.text) return;
+      await loadElectronProjectText(result.text, result.filePath || filePath);
+    } catch (error) {
+      forgetRecentProject(filePath);
+      alert(error instanceof Error ? error.message : "Could not open recent project file.");
+    }
+  }, [forgetRecentProject, loadElectronProjectText]);
+
   const handleOpenProjectWrapped = async () => {
     if (window.electronAPI) {
       try {
         const result = await window.electronAPI.openProject();
         if (result.canceled || !result.text) return;
-
-        const data = parseProjectJson(result.text);
-        const loadedBoxes = await loadProject(data, null);
-        setBoxes(loadedBoxes);
-        setPageCount(1);
-        setElectronProjectPath(result.filePath || null);
+        await loadElectronProjectText(result.text, result.filePath);
       } catch (error) {
         alert(error instanceof Error ? error.message : "Could not open project file.");
       }
@@ -310,6 +348,7 @@ const App: React.FC = () => {
       if (!result.canceled && result.filePath) {
         setProject(syncedProject);
         setElectronProjectPath(result.filePath);
+        rememberRecentProject(result.filePath, syncedProject.name);
       }
       return;
     }
@@ -339,7 +378,10 @@ const App: React.FC = () => {
 
       if (!result.canceled) {
         setProject(syncedProject);
-        if (result.filePath) setElectronProjectPath(result.filePath);
+        if (result.filePath) {
+          setElectronProjectPath(result.filePath);
+          rememberRecentProject(result.filePath, syncedProject.name);
+        }
       }
       return;
     }
@@ -391,6 +433,15 @@ const App: React.FC = () => {
             >
               <span>Open from Cloud...</span>
             </button>
+
+            {window.electronAPI && (
+              <RecentProjectsMenu
+                projects={recentProjects}
+                onOpen={handleOpenRecentProject}
+                onRemove={forgetRecentProject}
+                onClear={clearRecentProjects}
+              />
+            )}
           </div>
         </div>
 
@@ -425,6 +476,8 @@ const App: React.FC = () => {
         isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
         onSave={handleSaveProject}
         onOpen={handleOpenProjectWrapped}
+        onRecent={() => setIsRecentProjectsOpen(open => !open)}
+        hasRecentProjects={window.electronAPI ? recentProjects.length > 0 : false}
         onExportPdf={() => setIsExportOptionsOpen(true)}
         onExportJson={handleSaveAsProject}
         onCloud={() => setIsCloudModalOpen(true)}
@@ -438,12 +491,25 @@ const App: React.FC = () => {
         onPageChange={handlePageChange}
       />
 
+      {window.electronAPI && isRecentProjectsOpen && (
+        <div className="absolute left-20 top-16 z-[80] w-[420px] max-w-[calc(100vw-2rem)] rounded-2xl border border-outline-variant bg-surface-container shadow-2xl">
+          <RecentProjectsMenu
+            projects={recentProjects}
+            onOpen={handleOpenRecentProject}
+            onRemove={forgetRecentProject}
+            onClear={clearRecentProjects}
+            compact
+          />
+        </div>
+      )}
+
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar
           boxes={boxes}
           filteredBoxes={filteredBoxes}
           currentPage={currentPage}
           pageCount={pageCount}
+          viewMode={viewMode}
           onDeleteBox={deleteBox}
           onJumpToPage={handlePageChange}
           onFocusBox={setActiveBoxId}

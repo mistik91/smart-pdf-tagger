@@ -10,7 +10,7 @@ Smart PDF Tagger is built around a browser-first React renderer with a small Ele
 | Electron main process | `electron/main.ts` | Desktop window, native open/save dialogs, and external-link handling. |
 | Electron preload | `electron/preload.cts` | Narrow `window.electronAPI` bridge for project file operations. |
 
-The renderer detects whether `window.electronAPI` exists. When it is present, project open/save flows use native dialogs. When it is absent, the browser upload/download fallback remains available.
+The renderer detects whether `window.electronAPI` exists. When it is present, project open/save flows use native dialogs, recent project paths, and native recent-file reopening. When it is absent, the browser upload/download fallback remains available.
 
 ## Core App Areas
 
@@ -39,6 +39,8 @@ This makes project files portable, but large PDFs will produce large JSON files 
 The Electron window uses `contextIsolation` and keeps `nodeIntegration` disabled. The renderer receives only the project file API exposed by `electron/preload.cts`.
 
 External links are handed to the operating system shell instead of opening arbitrary windows inside the app.
+
+Packaged desktop builds check GitHub Releases for updates on startup through `electron-updater`. Development and unpackaged test runs skip update checks.
 
 ## Testing Strategy
 

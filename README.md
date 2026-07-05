@@ -28,9 +28,10 @@ It runs as a browser app during development and ships as an Electron desktop app
 - Search, filtering, batch edits, annotation sorting, and reusable tag templates.
 - Project metadata fields for client, document type, status, and reviewer.
 - Version management for updated PDFs, including tag copying and version switching.
+- Recent desktop project list for quickly reopening native project files.
 - Export controls for JSON, CSV fields, and annotated PDFs with labels, comments, and colors.
 - Optional Gemini-assisted label suggestions and optional OneDrive project storage.
-- Electron desktop build with native project file dialogs and a generated app icon.
+- Electron desktop build with native project file dialogs, GitHub release update checks, and a generated app icon.
 
 ## Download
 

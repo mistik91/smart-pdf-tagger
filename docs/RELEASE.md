@@ -2,6 +2,8 @@
 
 This project publishes Windows desktop builds through GitHub Releases.
 
+GitHub Releases also provide the update feed used by packaged desktop builds on startup. Keep `latest.yml`, the installer, and the block map attached to each public release.
+
 ## Preconditions
 
 - The working tree is clean except for intentional release changes.
@@ -55,4 +57,4 @@ Generated binaries, unpacked app folders, and block maps should not be committed
 
 ## Current Release
 
-The current public release is [v1.1.0](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.1.0).
+The current public release is [v1.2.0](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.2.0).

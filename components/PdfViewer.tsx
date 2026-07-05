@@ -203,6 +203,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   // Render Page
   const renderPage = useCallback(async () => {
+    if (viewMode !== ViewMode.SINGLE) return;
     if (!pdfDoc || !canvasRef.current) return;
     if (currentPage < 1 || currentPage > pdfDoc.numPages) return;
 
@@ -249,7 +250,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       }
       console.error("Page render error:", error);
     }
-  }, [pdfDoc, currentPage, scale]);
+  }, [pdfDoc, currentPage, scale, viewMode]);
 
   useEffect(() => {
     renderPage();

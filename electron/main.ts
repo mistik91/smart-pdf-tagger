@@ -8,6 +8,40 @@ const appRoot = path.resolve(__dirname, '..');
 
 const isDev = process.env.ELECTRON_DEV_SERVER_URL !== undefined;
 
+const checkForUpdatesOnStartup = async () => {
+  if (isDev || !app.isPackaged) return;
+
+  const { autoUpdater } = await import('electron-updater');
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('error', error => {
+    console.warn('Update check failed:', error);
+  });
+
+  autoUpdater.on('update-downloaded', async () => {
+    const result = await dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Ready',
+      message: 'A new Smart PDF Tagger update has been downloaded.',
+      detail: 'Restart the app to install it now, or keep working and the update will install when you close the app.',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch(error => {
+      console.warn('Update check failed:', error);
+    });
+  }, 3000);
+};
+
 const createWindow = async () => {
   const mainWindow = new BrowserWindow({
     width: 1440,
@@ -37,7 +71,10 @@ const createWindow = async () => {
   }
 };
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  await createWindow();
+  await checkForUpdatesOnStartup();
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -66,6 +103,14 @@ ipcMain.handle('project:open', async () => {
   }
 
   const filePath = result.filePaths[0];
+  const text = await readFile(filePath, 'utf8');
+  return { canceled: false, filePath, text };
+});
+
+ipcMain.handle('project:openPath', async (_event, filePath: string) => {
+  if (path.extname(filePath).toLowerCase() !== '.json') {
+    throw new Error('Recent project must be a JSON file.');
+  }
   const text = await readFile(filePath, 'utf8');
   return { canceled: false, filePath, text };
 });

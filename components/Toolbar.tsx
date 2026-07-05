@@ -1,5 +1,5 @@
 import React from 'react';
-import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle, ChevronLeft, ChevronRight, Rows3, Square } from 'lucide-react';
+import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle, ChevronLeft, ChevronRight, Rows3, Square, Clock } from 'lucide-react';
 import { ToolState, ViewMode } from '../types';
 
 interface ToolbarProps {
@@ -13,6 +13,8 @@ interface ToolbarProps {
     setIsDarkMode: (v: boolean) => void;
     onSave: () => void;
     onOpen: () => void;
+    onRecent: () => void;
+    hasRecentProjects: boolean;
     onExportPdf: () => void;
     onExportJson: () => void; // Save As
     onCloud: () => void;
@@ -31,7 +33,7 @@ interface ToolbarProps {
 export const Toolbar: React.FC<ToolbarProps> = ({
     scale, onZoom, tool, setTool, isDarkMode, setIsDarkMode,
     viewMode, setViewMode,
-    onSave, onOpen, onExportPdf, onExportJson, onCloud, onSettings,
+    onSave, onOpen, onRecent, hasRecentProjects, onExportPdf, onExportJson, onCloud, onSettings,
     onUndo, onRedo, onCopy, onPaste, hasClipboard, onHelp,
     currentPage, pageCount, onPageChange
 }) => {
@@ -58,6 +60,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <div className="flex items-center gap-3">
                 <button onClick={onOpen} aria-label="Open Project" className="p-3 hover:bg-surface-container-highest rounded-full text-on-surface-variant hover:text-on-surface transition-all" title="Open Project (JSON)">
                     <FolderOpen className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={onRecent}
+                    aria-label="Recent Projects"
+                    disabled={!hasRecentProjects}
+                    className={`p-3 rounded-full transition-all ${hasRecentProjects ? 'hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface' : 'text-outline-variant/50 cursor-not-allowed'}`}
+                    title={hasRecentProjects ? 'Recent Projects' : 'No recent projects'}
+                >
+                    <Clock className="w-5 h-5" />
                 </button>
                 <button onClick={onSave} aria-label="Save Project" className="p-3 hover:bg-surface-container-highest rounded-full text-on-surface-variant hover:text-on-surface transition-all" title="Save">
                     <Save className="w-5 h-5" />

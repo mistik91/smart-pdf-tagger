@@ -48,11 +48,11 @@ const uploadPdf = async (page: Page, pdfPath: string) => {
   return { canvas, pageLayer };
 };
 
-const createMultipagePdfFixture = async () => {
+const createMultipagePdfFixture = async (pageTotal = 3) => {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
 
-  for (let pageNumber = 1; pageNumber <= 3; pageNumber += 1) {
+  for (let pageNumber = 1; pageNumber <= pageTotal; pageNumber += 1) {
     const page = pdf.addPage([595, 842]);
     page.drawText(`Multipage navigation fixture - page ${pageNumber}`, {
       x: 72,
@@ -78,6 +78,30 @@ const createMultipagePdfFixture = async () => {
 const getPageLayer = (page: Page, pageNumber: number) => (
   page.locator(`[data-testid="pdf-hit-layer"][data-page="${pageNumber}"]`)
 );
+
+const canvasHasPaintedPage = async (canvas: Locator) => {
+  return canvas.evaluate(node => {
+    const canvasNode = node as HTMLCanvasElement;
+    const context = canvasNode.getContext('2d');
+    if (!context || canvasNode.width === 0 || canvasNode.height === 0) return false;
+
+    const sampleWidth = Math.min(80, canvasNode.width);
+    const sampleHeight = Math.min(80, canvasNode.height);
+    const imageData = context.getImageData(0, 0, sampleWidth, sampleHeight).data;
+    let lightPixels = 0;
+    let darkPixels = 0;
+
+    for (let index = 0; index < imageData.length; index += 4) {
+      const alpha = imageData[index + 3];
+      if (alpha === 0) continue;
+      const brightness = (imageData[index] + imageData[index + 1] + imageData[index + 2]) / 3;
+      if (brightness > 200) lightPixels += 1;
+      if (brightness < 20) darkPixels += 1;
+    }
+
+    return lightPixels > 100 && darkPixels < lightPixels;
+  });
+};
 
 const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
   await pageLayer.scrollIntoViewIfNeeded();
@@ -124,6 +148,7 @@ test.describe('PDF annotation workflow', () => {
     await expect(currentPageInput).toHaveValue('1');
     await expect(page.getByLabel('Page count')).toHaveText('/ 3');
     await expect(page.getByLabel('Page navigator')).toBeVisible();
+    await expect(page.getByLabel('Sidebar view').getByRole('button', { name: 'Pages' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: 'Go to page 1' })).toContainText('0 regions');
     await expect(page.getByRole('button', { name: 'Go to page 2' })).toContainText('0 regions');
     await expect(page.getByRole('button', { name: 'Go to page 3' })).toContainText('0 regions');
@@ -139,6 +164,9 @@ test.describe('PDF annotation workflow', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('[data-testid="region-box"][data-region-page="2"]')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Go to page 2' })).toContainText('1 region');
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Regions' }).click();
+    await expect(page.getByText('Only visible on page two.')).toBeVisible();
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Pages' }).click();
     await expect(currentPageInput).toHaveValue('2');
 
     await page.getByRole('button', { name: 'Previous Page' }).click();
@@ -189,6 +217,26 @@ test.describe('PDF annotation workflow', () => {
     fs.rmSync(pdfPath, { force: true });
   });
 
+  test('switches to single-page mode with a painted page and scrollable page navigator', async ({ page }) => {
+    const pdfPath = await createMultipagePdfFixture(18);
+
+    const { canvas } = await uploadPdf(page, pdfPath);
+    await page.getByRole('button', { name: 'Single Page View' }).click();
+    await expect(page.getByRole('button', { name: 'Single Page View' })).toHaveClass(/bg-primary/);
+    await expect.poll(() => canvasHasPaintedPage(page.locator('canvas').first())).toBe(true);
+
+    const lastPageButton = page.getByRole('button', { name: 'Go to page 18' });
+    await lastPageButton.scrollIntoViewIfNeeded();
+    await expect(lastPageButton).toBeVisible();
+    await lastPageButton.click();
+    await expect(page.getByLabel('Current page')).toHaveValue('18');
+
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Regions' }).click();
+    await expect(page.getByText('No tags yet.')).toBeVisible();
+
+    fs.rmSync(pdfPath, { force: true });
+  });
+
   test('loads a real PDF, creates a commented region, and opens export options', async ({ page }) => {
     const pdfPath = findPdfFixture();
     test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
@@ -205,6 +253,7 @@ test.describe('PDF annotation workflow', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
 
     await expect(page.getByText('Regions (1)')).toBeVisible();
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Regions' }).click();
     await expect(page.getByTitle('Smoke Region')).toBeVisible();
     await expect(page.getByText('Browser smoke comment')).toBeVisible();
 
@@ -283,7 +332,9 @@ test.describe('PDF annotation workflow', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
 
     await expect(page.getByText('Regions (1)')).toBeVisible();
-    await expect(page.getByTitle('Imported Amount')).toBeVisible();
+    await expect(page.locator('[data-testid="region-box"][data-region-label="Imported Amount"]')).toHaveCount(1);
+    await page.getByLabel('Sidebar view').getByRole('button', { name: 'Regions' }).click();
+    await expect(page.getByText('Imported from a portable template file.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Export CSV' }).click();
     await page.getByRole('checkbox', { name: 'Color', exact: true }).check();
@@ -299,6 +350,7 @@ test.describe('PDF annotation workflow', () => {
     expect(csv).toContain('"Imported Amount"');
     expect(csv).toContain('"Imported from a portable template file."');
 
+    await page.getByRole('button', { name: /Version Control/ }).click();
     page.once('dialog', dialog => dialog.accept());
     await page.getByLabel('New version PDF').setInputFiles(pdfPath!);
     await expect(page.getByText('Regions (1)')).toBeVisible();
@@ -323,7 +375,7 @@ test.describe('PDF annotation workflow', () => {
     await page.getByPlaceholder('e.g. Invoice Total').fill('duplicate label');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Label already exists on page 1.')).toBeVisible();
-    await expect(page.getByTitle('Duplicate Label')).toHaveCount(1);
+    await expect(page.locator('[data-testid="region-box"][data-region-label="Duplicate Label"]')).toHaveCount(1);
   });
 
   test('shows friendly errors for invalid project and template imports', async ({ page }) => {

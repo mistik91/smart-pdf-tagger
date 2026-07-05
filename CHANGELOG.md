@@ -4,6 +4,24 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.2.0 - 2026-07-05
+
+### Added
+
+- Recent desktop project list with reopen, remove, and clear actions.
+- Startup update checks for packaged Electron builds using GitHub Releases.
+- Sidebar mode switch for page navigation versus detailed region list.
+- Scrollable page navigation for large multipage PDFs.
+
+### Fixed
+
+- Switching from continuous-scroll mode to single-page mode now renders the page immediately instead of showing a black canvas.
+- Version control is collapsed by default to keep more sidebar space available.
+
+### Verified
+
+- Unit tests, TypeScript checks, production build, browser workflow tests with the attached mortgage-interest PDF, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+
 ## v1.1.0 - 2026-07-05
 
 ### Added
