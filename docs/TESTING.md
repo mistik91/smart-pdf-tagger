@@ -36,7 +36,7 @@ The browser suite covers:
 - Save As prompt and JSON download.
 - Keyboard shortcuts modal.
 - Metadata and duplicate-rule settings.
-- Template import/export and template application.
+- Empty default templates, template import/export, and template application.
 - PDF version upload, copied tags, and version renaming.
 - Friendly errors for invalid project/template JSON imports.
 

@@ -25,7 +25,7 @@ It runs as a browser app during development and ships as an Electron desktop app
 - Multipage PDF viewing with continuous scrolling by default, single-page fallback, page count, previous/next controls, direct page input, and page keyboard shortcuts.
 - Sidebar page navigator with per-page region counts.
 - Labels, descriptions, tags, colors, visible comment indicators, and duplicate detection rules.
-- Search, filtering, batch edits, annotation sorting, and reusable tag templates.
+- Search, filtering, batch edits, annotation sorting, and user-defined tag templates.
 - Project metadata fields for client, document type, status, and reviewer.
 - Version management for updated PDFs, including tag copying and version switching.
 - Recent desktop project list for quickly reopening native project files.

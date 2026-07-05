@@ -59,4 +59,4 @@ Generated binaries, unpacked app folders, and block maps should not be committed
 
 ## Current Release
 
-The current public release is [v1.2.4](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.2.4).
+The current public release is [v1.2.5](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.2.5).

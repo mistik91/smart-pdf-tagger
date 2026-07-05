@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createEmptyTemplateField,
-  DEFAULT_TAG_TEMPLATE_FIELDS,
   loadTemplateFields,
   parseTemplateFieldsJson,
   saveTemplateFields,
@@ -13,8 +12,8 @@ describe('tag templates', () => {
     localStorage.clear();
   });
 
-  it('loads default templates when no custom list is saved', () => {
-    expect(loadTemplateFields()).toEqual(DEFAULT_TAG_TEMPLATE_FIELDS);
+  it('loads an empty template list when no custom list is saved', () => {
+    expect(loadTemplateFields()).toEqual([]);
   });
 
   it('persists custom templates', () => {

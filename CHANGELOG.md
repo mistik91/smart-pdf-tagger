@@ -4,6 +4,17 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.2.5 - 2026-07-05
+
+### Changed
+
+- Removed bundled tag templates so new users start with an empty, user-defined template list.
+- Template settings now clear templates instead of resetting to shipped defaults.
+
+### Verified
+
+- Unit tests, TypeScript checks, browser workflow tests with generated PDF fixtures, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+
 ## v1.2.4 - 2026-07-05
 
 ### Changed

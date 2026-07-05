@@ -22,7 +22,7 @@ The renderer detects whether `window.electronAPI` exists. When it is present, pr
 
 ## Project Files
 
-Project JSON is self-contained. It stores document metadata, embedded PDF data, annotation regions, tags, colors, descriptions, versions, templates, and export-ready state.
+Project JSON is self-contained. It stores document metadata, embedded PDF data, annotation regions, tags, colors, descriptions, versions, user-defined templates, and export-ready state.
 
 This makes project files portable, but large PDFs will produce large JSON files because PDF bytes are stored as base64.
 

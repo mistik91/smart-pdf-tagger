@@ -10,83 +10,6 @@ export interface TagTemplateField {
   repeatable?: boolean;
 }
 
-export const DEFAULT_TAG_TEMPLATE_FIELDS: TagTemplateField[] = [
-  {
-    id: 'invoice.vendor-name',
-    templateName: 'Invoice',
-    label: 'Vendor Name',
-    description: 'Supplier or company issuing the invoice.',
-    tags: ['invoice', 'vendor'],
-    color: TAG_COLORS[4],
-  },
-  {
-    id: 'invoice.invoice-number',
-    templateName: 'Invoice',
-    label: 'Invoice Number',
-    description: 'Unique invoice identifier.',
-    tags: ['invoice', 'identifier'],
-    color: TAG_COLORS[5],
-  },
-  {
-    id: 'invoice.invoice-date',
-    templateName: 'Invoice',
-    label: 'Invoice Date',
-    description: 'Date the invoice was issued.',
-    tags: ['invoice', 'date'],
-    color: TAG_COLORS[3],
-  },
-  {
-    id: 'invoice.total-amount',
-    templateName: 'Invoice',
-    label: 'Total Amount',
-    description: 'Final amount due.',
-    tags: ['invoice', 'currency', 'total'],
-    color: TAG_COLORS[2],
-  },
-  {
-    id: 'contract.party',
-    templateName: 'Contract',
-    label: 'Contract Party',
-    description: 'A person or organization bound by the agreement.',
-    tags: ['contract', 'party'],
-    color: TAG_COLORS[6],
-    repeatable: true,
-  },
-  {
-    id: 'contract.effective-date',
-    templateName: 'Contract',
-    label: 'Effective Date',
-    description: 'Date when the contract becomes active.',
-    tags: ['contract', 'date'],
-    color: TAG_COLORS[3],
-  },
-  {
-    id: 'contract.signature',
-    templateName: 'Contract',
-    label: 'Signature',
-    description: 'Signature block or signed approval area.',
-    tags: ['contract', 'signature'],
-    color: TAG_COLORS[0],
-    repeatable: true,
-  },
-  {
-    id: 'shipping.tracking-number',
-    templateName: 'Shipping',
-    label: 'Tracking Number',
-    description: 'Shipment tracking identifier.',
-    tags: ['shipping', 'identifier'],
-    color: TAG_COLORS[5],
-  },
-  {
-    id: 'shipping.recipient-address',
-    templateName: 'Shipping',
-    label: 'Recipient Address',
-    description: 'Destination address for the shipment.',
-    tags: ['shipping', 'address'],
-    color: TAG_COLORS[1],
-  },
-];
-
 const STORAGE_KEY = 'smart_pdf_tagger_tag_templates';
 
 export const createTemplateId = () =>
@@ -147,15 +70,15 @@ export const serializeTemplateFields = (templates: TagTemplateField[]) =>
   JSON.stringify(normalizeTemplateFields(templates), null, 2);
 
 export const loadTemplateFields = (): TagTemplateField[] => {
-  if (typeof localStorage === 'undefined') return DEFAULT_TAG_TEMPLATE_FIELDS;
+  if (typeof localStorage === 'undefined') return [];
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_TAG_TEMPLATE_FIELDS;
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return normalizeTemplateFields(parsed);
   } catch {
-    return DEFAULT_TAG_TEMPLATE_FIELDS;
+    return [];
   }
 };
 

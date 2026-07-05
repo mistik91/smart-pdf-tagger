@@ -3,7 +3,6 @@ import { Download, Plus, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { TAG_COLORS } from '../types';
 import {
   createEmptyTemplateField,
-  DEFAULT_TAG_TEMPLATE_FIELDS,
   parseTemplateFieldsJson,
   serializeTemplateFields,
   TagTemplateField,
@@ -44,9 +43,9 @@ const TemplateSettings: React.FC<TemplateSettingsProps> = ({ templates, onChange
     setSelectedId(next[0]?.id || '');
   };
 
-  const resetTemplates = () => {
-    onChange(DEFAULT_TAG_TEMPLATE_FIELDS);
-    setSelectedId(DEFAULT_TAG_TEMPLATE_FIELDS[0]?.id || '');
+  const clearTemplates = () => {
+    onChange([]);
+    setSelectedId('');
     setImportError(null);
   };
 
@@ -100,7 +99,7 @@ const TemplateSettings: React.FC<TemplateSettingsProps> = ({ templates, onChange
           <button onClick={addTemplate} className="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant" title="Add field">
             <Plus className="w-4 h-4" />
           </button>
-          <button onClick={resetTemplates} className="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant" title="Reset defaults">
+          <button onClick={clearTemplates} className="p-2 rounded-full hover:bg-surface-container-highest text-on-surface-variant" title="Clear templates">
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
@@ -117,13 +116,21 @@ const TemplateSettings: React.FC<TemplateSettingsProps> = ({ templates, onChange
         value={selectedTemplate?.id || ''}
         onChange={e => setSelectedId(e.target.value)}
         className="w-full bg-surface-container-highest border border-outline-variant text-on-surface p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        disabled={templates.length === 0}
       >
+        {templates.length === 0 && <option value="">No template fields</option>}
         {templates.map(template => (
           <option key={template.id} value={template.id}>
             {template.templateName} / {template.label}
           </option>
         ))}
       </select>
+
+      {templates.length === 0 && (
+        <div className="rounded-xl border border-dashed border-outline-variant bg-surface/40 px-4 py-5 text-sm text-on-surface-variant">
+          No template fields are included by default. Add fields here or import a template JSON file when a workflow needs them.
+        </div>
+      )}
 
       {selectedTemplate && (
         <div className="space-y-3">
