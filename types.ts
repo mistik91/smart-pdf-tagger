@@ -52,6 +52,11 @@ export enum ToolState {
   HAND = 'HAND'
 }
 
+export enum ViewMode {
+  SINGLE = 'SINGLE',
+  CONTINUOUS = 'CONTINUOUS'
+}
+
 export enum DuplicateRule {
   GLOBAL_BLOCK = 'GLOBAL_BLOCK',
   PAGE_BLOCK = 'PAGE_BLOCK',

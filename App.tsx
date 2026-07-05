@@ -9,7 +9,7 @@ import ExportOptionsModal from './components/ExportOptionsModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import TemplateSettings from './components/TemplateSettings';
 import { Toolbar } from './components/Toolbar';
-import { DuplicateRule, ToolState } from './types';
+import { DuplicateRule, ToolState, ViewMode } from './types';
 import { getCloudProvider } from './services/cloudService';
 import { exportAnnotatedPdf } from './services/pdfExportService';
 import { useAnnotations } from './hooks/useAnnotations';
@@ -56,6 +56,7 @@ const App: React.FC = () => {
   // 2. View State (Local UI)
   const [scale, setScale] = useState(1.0);
   const [tool, setTool] = useState<ToolState>(ToolState.DRAW);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CONTINUOUS);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -79,6 +80,10 @@ const App: React.FC = () => {
     setCurrentPage(Math.min(Math.max(1, page), Math.max(1, pageCount)));
     setActiveBoxId(null);
   }, [pageCount, setActiveBoxId, setCurrentPage]);
+
+  const handleVisiblePageChange = useCallback((page: number) => {
+    setCurrentPage(Math.min(Math.max(1, page), Math.max(1, pageCount)));
+  }, [pageCount, setCurrentPage]);
 
   // -- Connect Hooks --
 
@@ -416,6 +421,7 @@ const App: React.FC = () => {
       <Toolbar
         scale={scale} onZoom={(s) => setScale(Math.min(3, Math.max(0.5, s)))}
         tool={tool} setTool={setTool}
+        viewMode={viewMode} setViewMode={setViewMode}
         isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
         onSave={handleSaveProject}
         onOpen={handleOpenProjectWrapped}
@@ -459,8 +465,10 @@ const App: React.FC = () => {
             pdfUrl={pdfFile}
             currentPage={currentPage}
             scale={scale}
+            viewMode={viewMode}
             onZoom={setScale}
             onPageChange={handlePageChange}
+            onVisiblePageChange={handleVisiblePageChange}
             onPageCountChange={setPageCount}
             boxes={boxes}
             visibleBoxes={filteredBoxes}

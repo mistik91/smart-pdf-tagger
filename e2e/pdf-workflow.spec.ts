@@ -32,9 +32,9 @@ const uploadPdf = async (page: Page, pdfPath: string) => {
   await page.goto('/');
   await page.getByLabel('New project PDF').setInputFiles(pdfPath);
 
-  const canvas = page.locator('canvas');
+  const canvas = page.locator('canvas').first();
   await expect(canvas).toBeVisible();
-  const pageLayer = page.getByTestId('pdf-hit-layer');
+  const pageLayer = page.locator('[data-testid="pdf-hit-layer"][data-page="1"]');
   await expect(pageLayer).toBeVisible();
 
   await expect.poll(async () => {
@@ -75,16 +75,37 @@ const createMultipagePdfFixture = async () => {
   return pdfPath;
 };
 
-const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
-  const pageBox = await pageLayer.boundingBox();
-  expect(pageBox).not.toBeNull();
-  expect(pageBox!.width).toBeGreaterThan(100);
-  expect(pageBox!.height).toBeGreaterThan(100);
+const getPageLayer = (page: Page, pageNumber: number) => (
+  page.locator(`[data-testid="pdf-hit-layer"][data-page="${pageNumber}"]`)
+);
 
-  const startX = pageBox!.x + Math.min(120 + offset, pageBox!.width - 240);
-  const startY = pageBox!.y + Math.min(120 + offset, pageBox!.height - 160);
-  const endX = startX + Math.min(180, pageBox!.width * 0.25);
-  const endY = startY + Math.min(90, pageBox!.height * 0.15);
+const drawRegion = async (page: Page, pageLayer: Locator, offset = 0) => {
+  await pageLayer.scrollIntoViewIfNeeded();
+  const pageBox = await pageLayer.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(pageBox.width).toBeGreaterThan(100);
+  expect(pageBox.height).toBeGreaterThan(100);
+
+  const visibleLeft = Math.max(pageBox.x, 0);
+  const visibleTop = Math.max(pageBox.y, 0);
+  const visibleRight = Math.min(pageBox.x + pageBox.width, pageBox.viewportWidth);
+  const visibleBottom = Math.min(pageBox.y + pageBox.height, pageBox.viewportHeight);
+  expect(visibleRight - visibleLeft).toBeGreaterThan(120);
+  expect(visibleBottom - visibleTop).toBeGreaterThan(100);
+
+  const startX = visibleLeft + Math.min(80 + offset, Math.max(20, visibleRight - visibleLeft - 220));
+  const startY = visibleTop + Math.min(80 + offset, Math.max(20, visibleBottom - visibleTop - 140));
+  const endX = Math.min(startX + 180, visibleRight - 24);
+  const endY = Math.min(startY + 90, visibleBottom - 24);
 
   await page.mouse.move(startX, startY);
   await expect.poll(async () => page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.getAttribute('data-testid'), [startX, startY])).toBe('pdf-hit-layer');
@@ -97,7 +118,7 @@ test.describe('PDF annotation workflow', () => {
   test('navigates a multipage PDF and keeps annotations scoped to their page', async ({ page }) => {
     const pdfPath = await createMultipagePdfFixture();
 
-    const { pageLayer } = await uploadPdf(page, pdfPath);
+    await uploadPdf(page, pdfPath);
 
     const currentPageInput = page.getByLabel('Current page');
     await expect(currentPageInput).toHaveValue('1');
@@ -112,17 +133,18 @@ test.describe('PDF annotation workflow', () => {
     await page.getByRole('button', { name: 'Next Page' }).click();
     await expect(currentPageInput).toHaveValue('2');
 
-    await drawRegion(page, pageLayer);
+    await drawRegion(page, getPageLayer(page, 2));
     await page.getByPlaceholder('e.g. Invoice Total').fill('Page Two Region');
     await page.getByPlaceholder('Optional details...').fill('Only visible on page two.');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('[data-testid="region-box"][data-region-page="2"]')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Go to page 2' })).toContainText('1 region');
-    await expect(page.getByText('PAGE 2')).toBeVisible();
+    await expect(currentPageInput).toHaveValue('2');
 
     await page.getByRole('button', { name: 'Previous Page' }).click();
     await expect(currentPageInput).toHaveValue('1');
-    await expect(page.locator('[data-testid="region-box"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="pdf-page"][data-page="1"]').locator('[data-testid="region-box"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="pdf-page"][data-page="2"]').locator('[data-testid="region-box"]')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'Go to page 3' }).click();
     await expect(currentPageInput).toHaveValue('3');
@@ -297,7 +319,7 @@ test.describe('PDF annotation workflow', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Regions (1)')).toBeVisible();
 
-    await drawRegion(page, pageLayer, 80);
+    await drawRegion(page, pageLayer, 220);
     await page.getByPlaceholder('e.g. Invoice Total').fill('duplicate label');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Label already exists on page 1.')).toBeVisible();

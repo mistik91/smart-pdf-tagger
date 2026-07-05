@@ -29,6 +29,8 @@ This makes project files portable, but large PDFs will produce large JSON files 
 ## PDF Rendering And Export
 
 - PDF.js renders documents in the viewer.
+- The viewer supports continuous-scroll rendering for every page and a single-page mode for focused review.
+- Annotation coordinates remain page-scoped percentages, so drawing, moving, resizing, copying, and exporting stay stable across zoom levels and view modes.
 - pdf-lib writes annotated PDF exports.
 - Export options control whether labels, comments, colors, and selected fields appear in generated outputs.
 

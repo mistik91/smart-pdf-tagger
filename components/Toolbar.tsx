@@ -1,12 +1,14 @@
 import React from 'react';
-import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ToolState } from '../types';
+import { ZoomIn, ZoomOut, Hand, BoxSelect, Moon, Sun, Save, FolderOpen, Download, FileDown, Cloud, Settings, Undo, Redo, Copy, ClipboardPaste, HelpCircle, ChevronLeft, ChevronRight, Rows3, Square } from 'lucide-react';
+import { ToolState, ViewMode } from '../types';
 
 interface ToolbarProps {
     scale: number;
     onZoom: (val: number) => void;
     tool: ToolState;
     setTool: (t: ToolState) => void;
+    viewMode: ViewMode;
+    setViewMode: (mode: ViewMode) => void;
     isDarkMode: boolean;
     setIsDarkMode: (v: boolean) => void;
     onSave: () => void;
@@ -28,6 +30,7 @@ interface ToolbarProps {
 
 export const Toolbar: React.FC<ToolbarProps> = ({
     scale, onZoom, tool, setTool, isDarkMode, setIsDarkMode,
+    viewMode, setViewMode,
     onSave, onOpen, onExportPdf, onExportJson, onCloud, onSettings,
     onUndo, onRedo, onCopy, onPaste, hasClipboard, onHelp,
     currentPage, pageCount, onPageChange
@@ -87,6 +90,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     title="Pan Tool"
                 >
                     <Hand className="w-5 h-5" />
+                </button>
+                <div className="w-px h-6 bg-outline-variant mx-1" />
+                <button
+                    onClick={() => setViewMode(ViewMode.SINGLE)}
+                    className={`p-2.5 rounded-full transition-all ${viewMode === ViewMode.SINGLE ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'}`}
+                    aria-label="Single Page View"
+                    title="Single Page View"
+                >
+                    <Square className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => setViewMode(ViewMode.CONTINUOUS)}
+                    className={`p-2.5 rounded-full transition-all ${viewMode === ViewMode.CONTINUOUS ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'}`}
+                    aria-label="Continuous Scroll View"
+                    title="Continuous Scroll View"
+                >
+                    <Rows3 className="w-4 h-4" />
                 </button>
                 <div className="w-px h-6 bg-outline-variant mx-1" />
                 <button onClick={() => onZoom(scale - 0.1)} aria-label="Zoom Out" className="p-2 hover:bg-surface-container-highest rounded-full text-on-surface-variant transition-colors">

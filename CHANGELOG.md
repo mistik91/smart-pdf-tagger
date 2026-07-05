@@ -4,6 +4,22 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.1.0 - 2026-07-05
+
+### Added
+
+- Continuous-scroll PDF viewing as the default multipage experience.
+- Toolbar view toggle for switching between continuous-scroll and single-page modes.
+- Page-specific rendering layers so drawing, moving, resizing, AI labeling, and export preparation stay scoped to the correct PDF page.
+
+### Changed
+
+- Browser workflow coverage now verifies annotation creation directly on page-specific hit layers in continuous-scroll mode.
+
+### Verified
+
+- Unit tests, TypeScript checks, production build, browser workflow tests with the attached mortgage-interest PDF, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+
 ## v1.0.1 - 2026-07-05
 
 ### Added
