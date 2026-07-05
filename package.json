@@ -48,6 +48,7 @@
   "build": {
     "appId": "com.smartpdftagger.app",
     "productName": "Smart PDF Tagger",
+    "icon": "assets/app-icon.png",
     "directories": {
       "output": "release"
     },
@@ -57,9 +58,14 @@
       "package.json"
     ],
     "win": {
+      "icon": "assets/app-icon.ico",
       "target": [
         "nsis"
       ]
+    },
+    "nsis": {
+      "installerIcon": "assets/app-icon.ico",
+      "uninstallerIcon": "assets/app-icon.ico"
     }
   }
 }

@@ -37,6 +37,16 @@ npm audit --audit-level=moderate
 
 `npm run test:electron` builds the renderer and Electron files, launches the app with Playwright, verifies the preload API, and checks project-save IPC.
 
+## Release Builds
+
+Before publishing a desktop release, run the full quality check set and then:
+
+```bash
+npm run electron:dist
+```
+
+The default Windows installer output is `%TEMP%\smart-pdf-tagger-release\Smart PDF Tagger Setup 1.0.0.exe`. Upload the installer to GitHub Releases rather than committing generated binaries.
+
 ## Repo Hygiene
 
 - Do not commit `.env.local`, `node_modules`, `dist`, `dist-electron`, `release`, `desktop-pack-test`, `test-results`, or Playwright reports.

@@ -97,6 +97,8 @@ $env:ELECTRON_BUILDER_OUTPUT="E:\Documents\Codex\smart-pdf-tagger\release"
 npm run electron:pack
 ```
 
+The desktop app icon lives in `assets/app-icon.png` and `assets/app-icon.ico`.
+
 ## Quality Checks
 
 Run the full pre-upload check set:
@@ -118,6 +120,28 @@ npm run test:browser
 ```
 
 `npm run test:electron` builds the app, launches Electron with Playwright, verifies the preload bridge, and checks native project-save IPC without exposing Node.js to the renderer.
+
+## Release Build
+
+Use this sequence for a Windows release:
+
+```bash
+npm run test
+npm run typecheck
+npm run build
+npm run test:browser
+npm run test:electron
+npm audit --audit-level=moderate
+npm run electron:dist
+```
+
+The installer is written to:
+
+```text
+%TEMP%\smart-pdf-tagger-release\Smart PDF Tagger Setup 1.0.0.exe
+```
+
+Publish that installer through GitHub Releases. Keep generated package folders out of git history.
 
 ## Project Structure
 
