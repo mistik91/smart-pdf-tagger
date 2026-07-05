@@ -20,7 +20,7 @@ This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
 ### Verified
 
-- Unit tests, TypeScript checks, production build, browser workflow tests with the attached mortgage-interest PDF, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+- Unit tests, TypeScript checks, production build, browser workflow tests with a supplied PDF fixture, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
 
 ## v1.1.0 - 2026-07-05
 
@@ -36,7 +36,7 @@ This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
 ### Verified
 
-- Unit tests, TypeScript checks, production build, browser workflow tests with the attached mortgage-interest PDF, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+- Unit tests, TypeScript checks, production build, browser workflow tests with a supplied PDF fixture, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
 
 ## v1.0.1 - 2026-07-05
 
@@ -48,7 +48,7 @@ This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
 ### Verified
 
-- Unit tests, TypeScript checks, production build, browser workflow tests with the attached mortgage-interest PDF, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+- Unit tests, TypeScript checks, production build, browser workflow tests with a supplied PDF fixture, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
 
 ## v1.0.0 - 2026-07-05
 

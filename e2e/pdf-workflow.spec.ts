@@ -7,24 +7,6 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 const findPdfFixture = () => {
   const explicitPath = process.env.SMART_PDF_TEST_FILE;
   if (explicitPath && fs.existsSync(explicitPath)) return explicitPath;
-
-  const candidates = [
-    'E:\\Downloads',
-    path.join(os.homedir(), 'Downloads'),
-  ];
-
-  for (const folder of candidates) {
-    if (!fs.existsSync(folder)) continue;
-    const pdf = fs.readdirSync(folder)
-      .filter(file => file.toLowerCase().endsWith('.pdf'))
-      .map(file => path.join(folder, file))
-      .filter(file => fs.statSync(file).isFile())
-      .sort((a, b) => fs.statSync(a).size - fs.statSync(b).size)
-      .find(file => fs.statSync(file).size > 0);
-
-    if (pdf) return pdf;
-  }
-
   return null;
 };
 
@@ -239,7 +221,7 @@ test.describe('PDF annotation workflow', () => {
 
   test('loads a real PDF, creates a commented region, and opens export options', async ({ page }) => {
     const pdfPath = findPdfFixture();
-    test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
+    test.skip(!pdfPath, 'Set SMART_PDF_TEST_FILE to a PDF fixture path to run this test.');
 
     const { pageLayer } = await uploadPdf(page, pdfPath!);
     await expect(page.getByText('Regions (0)')).toBeVisible();
@@ -286,7 +268,7 @@ test.describe('PDF annotation workflow', () => {
 
   test('edits settings and templates, exports CSV, and creates a copied version', async ({ page }) => {
     const pdfPath = findPdfFixture();
-    test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
+    test.skip(!pdfPath, 'Set SMART_PDF_TEST_FILE to a PDF fixture path to run this test.');
 
     const { pageLayer } = await uploadPdf(page, pdfPath!);
 
@@ -362,7 +344,7 @@ test.describe('PDF annotation workflow', () => {
 
   test('blocks duplicate labels on a real PDF page', async ({ page }) => {
     const pdfPath = findPdfFixture();
-    test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
+    test.skip(!pdfPath, 'Set SMART_PDF_TEST_FILE to a PDF fixture path to run this test.');
 
     const { pageLayer } = await uploadPdf(page, pdfPath!);
 
@@ -398,7 +380,7 @@ test.describe('PDF annotation workflow', () => {
     await (await invalidProjectDialog).accept();
 
     const pdfPath = findPdfFixture();
-    test.skip(!pdfPath, 'No PDF fixture found in Downloads. Set SMART_PDF_TEST_FILE to run this test.');
+    test.skip(!pdfPath, 'Set SMART_PDF_TEST_FILE to a PDF fixture path to run this test.');
 
     await page.getByLabel('New project PDF').setInputFiles(pdfPath!);
     await page.locator('canvas').waitFor({ state: 'visible' });

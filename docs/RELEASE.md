@@ -41,7 +41,7 @@ The default output folder is:
 Set `ELECTRON_BUILDER_OUTPUT` when a different output folder is needed:
 
 ```powershell
-$env:ELECTRON_BUILDER_OUTPUT="E:\Documents\Codex\smart-pdf-tagger\release"
+$env:ELECTRON_BUILDER_OUTPUT="<output-directory>"
 npm run electron:dist
 ```
 

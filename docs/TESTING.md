@@ -40,12 +40,7 @@ The browser suite covers:
 - PDF version upload, copied tags, and version renaming.
 - Friendly errors for invalid project/template JSON imports.
 
-By default, the browser test looks for a PDF in the Downloads folder. For deterministic local runs:
-
-```powershell
-$env:SMART_PDF_TEST_FILE="E:\Downloads\your-file.pdf"
-npm run test:browser
-```
+Some browser tests use a caller-supplied PDF fixture. Without one, those fixture-dependent checks are skipped and the generated-PDF workflow tests still run.
 
 ## Electron Tests
 
