@@ -2,6 +2,9 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(__dirname, '..');
@@ -12,6 +15,8 @@ const releasesApiUrl = 'https://api.github.com/repos/mistik91/smart-pdf-tagger/r
 interface LatestRelease {
   version: string;
   url: string;
+  installerName?: string;
+  installerUrl?: string;
 }
 
 const normalizeVersion = (value: string) => value.trim().replace(/^v/i, '');
@@ -41,16 +46,53 @@ const getLatestRelease = async (): Promise<LatestRelease | null> => {
     throw new Error(`GitHub release check failed (${response.status}).`);
   }
 
-  const release = await response.json() as { tag_name?: string; html_url?: string; draft?: boolean; prerelease?: boolean };
+  const release = await response.json() as {
+    tag_name?: string;
+    html_url?: string;
+    draft?: boolean;
+    prerelease?: boolean;
+    assets?: Array<{
+      name?: string;
+      browser_download_url?: string;
+    }>;
+  };
   if (!release.tag_name || release.draft || release.prerelease) return null;
+
+  const installerAsset = release.assets?.find(asset =>
+    asset.name?.toLowerCase().endsWith('.exe') && !asset.name.toLowerCase().endsWith('.blockmap') && asset.browser_download_url
+  );
 
   return {
     version: normalizeVersion(release.tag_name),
     url: release.html_url || 'https://github.com/mistik91/smart-pdf-tagger/releases/latest',
+    installerName: installerAsset?.name,
+    installerUrl: installerAsset?.browser_download_url,
   };
 };
 
-const downloadUpdateWithFallback = async (releaseUrl: string) => {
+const downloadInstallerFromRelease = async (release: LatestRelease) => {
+  if (!release.installerUrl || !release.installerName) {
+    throw new Error('The latest release does not include a Windows installer asset.');
+  }
+
+  const downloadsPath = app.getPath('downloads');
+  const installerPath = path.join(downloadsPath, release.installerName);
+  const response = await fetch(release.installerUrl, {
+    headers: {
+      Accept: 'application/octet-stream',
+      'User-Agent': 'Smart-PDF-Tagger',
+    },
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Installer download failed (${response.status}).`);
+  }
+
+  await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), createWriteStream(installerPath));
+  return installerPath;
+};
+
+const downloadUpdateWithFallback = async (release: LatestRelease) => {
   try {
     const { autoUpdater } = await import('electron-updater');
     autoUpdater.autoDownload = false;
@@ -59,18 +101,54 @@ const downloadUpdateWithFallback = async (releaseUrl: string) => {
     await autoUpdater.downloadUpdate();
   } catch (error) {
     console.warn('Update download failed:', error);
-    const result = await dialog.showMessageBox({
+    const fallbackResult = await dialog.showMessageBox({
       type: 'warning',
-      title: 'Update Download Failed',
-      message: 'The in-app updater could not start the download.',
-      detail: 'Open the GitHub release page to download the installer manually.',
-      buttons: ['Open Release Page', 'Cancel'],
+      title: 'Update Download Fallback',
+      message: 'The built-in updater could not start the download.',
+      detail: 'Smart PDF Tagger can download the installer directly from GitHub instead.',
+      buttons: ['Download Installer', 'Open Release Page', 'Cancel'],
       defaultId: 0,
-      cancelId: 1,
+      cancelId: 2,
     });
 
-    if (result.response === 0) {
-      await shell.openExternal(releaseUrl);
+    if (fallbackResult.response === 1) {
+      await shell.openExternal(release.url);
+      return;
+    }
+
+    if (fallbackResult.response !== 0) return;
+
+    try {
+      const installerPath = await downloadInstallerFromRelease(release);
+      const result = await dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Downloaded',
+        message: `Smart PDF Tagger ${release.version} installer has been downloaded.`,
+        detail: 'Launch the installer now to update the app.',
+        buttons: ['Launch Installer', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+
+      if (result.response === 0) {
+        await shell.openPath(installerPath);
+        app.quit();
+      }
+    } catch (fallbackError) {
+      console.warn('Direct installer download failed:', fallbackError);
+      const result = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Update Download Failed',
+        message: 'The update installer could not be downloaded.',
+        detail: 'Open the GitHub release page to download the installer manually.',
+        buttons: ['Open Release Page', 'Cancel'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+
+      if (result.response === 0) {
+        await shell.openExternal(release.url);
+      }
     }
   }
 };
@@ -113,7 +191,7 @@ const checkForUpdates = async (mode: 'startup' | 'manual') => {
     });
 
     if (result.response === 0) {
-      await downloadUpdateWithFallback(latestRelease.url);
+      await downloadUpdateWithFallback(latestRelease);
     }
     if (result.response === 1) {
       await shell.openExternal(latestRelease.url);
