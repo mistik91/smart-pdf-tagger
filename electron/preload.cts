@@ -9,6 +9,7 @@ const electronAPI = {
   saveProjectAs: (payload: { text: string; suggestedName: string }) =>
     ipcRenderer.invoke('project:saveAs', payload) as Promise<{ canceled: boolean; filePath?: string }>,
   getAppVersion: () => ipcRenderer.invoke('app:getVersion') as Promise<string>,
+  checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates') as Promise<{ status: string; currentVersion?: string; latestVersion?: string }>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

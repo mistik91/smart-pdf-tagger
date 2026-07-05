@@ -15,6 +15,7 @@ test('starts the Electron shell with a secure preload bridge', async () => {
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.saveProject)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.saveProjectAs)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.getAppVersion)).toBe('function');
+  await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.checkForUpdates)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof (window as Window & { require?: unknown }).require)).toBe('undefined');
 
   await expect.poll(() => page.evaluate(() => window.electronAPI!.getAppVersion())).toMatch(/^\d+\.\d+\.\d+/);

@@ -4,6 +4,17 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.2.4 - 2026-07-05
+
+### Changed
+
+- Update checks now use a visible GitHub Releases pre-check before starting downloads.
+- The Help dialog now includes a manual Check for Updates action with visible no-update and failure feedback.
+
+### Verified
+
+- TypeScript checks, Electron smoke tests, dependency audit, full installer build, and packaged executable launch.
+
 ## v1.2.3 - 2026-07-05
 
 ### Changed

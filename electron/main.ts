@@ -7,34 +7,141 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(__dirname, '..');
 
 const isDev = process.env.ELECTRON_DEV_SERVER_URL !== undefined;
+const releasesApiUrl = 'https://api.github.com/repos/mistik91/smart-pdf-tagger/releases/latest';
 
-const checkForUpdatesOnStartup = async () => {
-  if (isDev || !app.isPackaged) return;
+interface LatestRelease {
+  version: string;
+  url: string;
+}
 
-  const { autoUpdater } = await import('electron-updater');
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
+const normalizeVersion = (value: string) => value.trim().replace(/^v/i, '');
 
-  autoUpdater.on('error', error => {
-    console.warn('Update check failed:', error);
+const compareVersions = (left: string, right: string) => {
+  const leftParts = normalizeVersion(left).split('.').map(part => Number.parseInt(part, 10) || 0);
+  const rightParts = normalizeVersion(right).split('.').map(part => Number.parseInt(part, 10) || 0);
+  const length = Math.max(leftParts.length, rightParts.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const diff = (leftParts[index] || 0) - (rightParts[index] || 0);
+    if (diff !== 0) return diff;
+  }
+
+  return 0;
+};
+
+const getLatestRelease = async (): Promise<LatestRelease | null> => {
+  const response = await fetch(releasesApiUrl, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'Smart-PDF-Tagger',
+    },
   });
 
-  autoUpdater.on('update-available', async updateInfo => {
+  if (!response.ok) {
+    throw new Error(`GitHub release check failed (${response.status}).`);
+  }
+
+  const release = await response.json() as { tag_name?: string; html_url?: string; draft?: boolean; prerelease?: boolean };
+  if (!release.tag_name || release.draft || release.prerelease) return null;
+
+  return {
+    version: normalizeVersion(release.tag_name),
+    url: release.html_url || 'https://github.com/mistik91/smart-pdf-tagger/releases/latest',
+  };
+};
+
+const downloadUpdateWithFallback = async (releaseUrl: string) => {
+  try {
+    const { autoUpdater } = await import('electron-updater');
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+    await autoUpdater.checkForUpdates();
+    await autoUpdater.downloadUpdate();
+  } catch (error) {
+    console.warn('Update download failed:', error);
     const result = await dialog.showMessageBox({
-      type: 'info',
-      title: 'Update Available',
-      message: `Smart PDF Tagger ${updateInfo.version} is available.`,
-      detail: 'Download the update now? You can keep working while it downloads.',
-      buttons: ['Download Update', 'Not Now'],
+      type: 'warning',
+      title: 'Update Download Failed',
+      message: 'The in-app updater could not start the download.',
+      detail: 'Open the GitHub release page to download the installer manually.',
+      buttons: ['Open Release Page', 'Cancel'],
       defaultId: 0,
       cancelId: 1,
     });
 
     if (result.response === 0) {
-      autoUpdater.downloadUpdate().catch(error => {
-        console.warn('Update download failed:', error);
+      await shell.openExternal(releaseUrl);
+    }
+  }
+};
+
+const checkForUpdates = async (mode: 'startup' | 'manual') => {
+  if (isDev || !app.isPackaged) {
+    if (mode === 'manual') {
+      await dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Check Unavailable',
+        message: 'Update checks are only available in packaged desktop builds.',
       });
     }
+    return { status: 'unavailable' };
+  }
+
+  try {
+    const latestRelease = await getLatestRelease();
+    const currentVersion = app.getVersion();
+
+    if (!latestRelease || compareVersions(latestRelease.version, currentVersion) <= 0) {
+      if (mode === 'manual') {
+        await dialog.showMessageBox({
+          type: 'info',
+          title: 'No Updates Available',
+          message: `Smart PDF Tagger ${currentVersion} is up to date.`,
+        });
+      }
+      return { status: 'none', currentVersion };
+    }
+
+    const result = await dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Available',
+      message: `Smart PDF Tagger ${latestRelease.version} is available.`,
+      detail: `You are currently running ${currentVersion}. Download the update now?`,
+      buttons: ['Download Update', 'Open Release Page', 'Not Now'],
+      defaultId: 0,
+      cancelId: 2,
+    });
+
+    if (result.response === 0) {
+      await downloadUpdateWithFallback(latestRelease.url);
+    }
+    if (result.response === 1) {
+      await shell.openExternal(latestRelease.url);
+    }
+
+    return { status: 'available', currentVersion, latestVersion: latestRelease.version };
+  } catch (error) {
+    console.warn('Update check failed:', error);
+    if (mode === 'manual') {
+      await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Update Check Failed',
+        message: 'Could not check GitHub Releases for updates.',
+        detail: error instanceof Error ? error.message : 'Unknown update check error.',
+      });
+    }
+    return { status: 'error' };
+  }
+};
+
+const checkForUpdatesOnStartup = async () => {
+  if (isDev || !app.isPackaged) return;
+
+  const { autoUpdater } = await import('electron-updater');
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('error', error => {
+    console.warn('Update check failed:', error);
   });
 
   autoUpdater.on('update-downloaded', async () => {
@@ -54,7 +161,7 @@ const checkForUpdatesOnStartup = async () => {
   });
 
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(error => {
+    checkForUpdates('startup').catch(error => {
       console.warn('Update check failed:', error);
     });
   }, 3000);
@@ -178,3 +285,4 @@ ipcMain.handle('project:saveAs', async (_event, payload: { text: string; suggest
 });
 
 ipcMain.handle('app:getVersion', () => app.getVersion());
+ipcMain.handle('app:checkForUpdates', () => checkForUpdates('manual'));

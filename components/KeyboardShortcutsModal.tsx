@@ -21,6 +21,7 @@ const shortcuts = [
 
 const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
   const [appVersion, setAppVersion] = React.useState<string | null>(null);
+  const [isCheckingUpdates, setIsCheckingUpdates] = React.useState(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -44,6 +45,16 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleCheckForUpdates = async () => {
+    if (!window.electronAPI?.checkForUpdates) return;
+    setIsCheckingUpdates(true);
+    try {
+      await window.electronAPI.checkForUpdates();
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center" onClick={onClose}>
@@ -74,6 +85,16 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
           <p>
             A focused desktop tool for tagging PDF regions, managing project versions, and exporting annotated PDF, CSV, and project data.
           </p>
+          {window.electronAPI?.checkForUpdates && (
+            <button
+              type="button"
+              onClick={handleCheckForUpdates}
+              disabled={isCheckingUpdates}
+              className="mt-2 px-3 py-1.5 rounded-full bg-surface-container-highest border border-outline-variant text-xs font-bold text-on-surface hover:bg-surface-container-high disabled:opacity-60 disabled:cursor-wait"
+            >
+              {isCheckingUpdates ? 'Checking...' : 'Check for Updates'}
+            </button>
+          )}
         </div>
       </div>
     </div>
