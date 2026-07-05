@@ -68,6 +68,7 @@ const createWindow = async () => {
     minHeight: 720,
     title: 'Smart PDF Tagger',
     backgroundColor: '#0f1518',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -75,6 +76,7 @@ const createWindow = async () => {
       sandbox: false,
     },
   });
+  mainWindow.setMenuBarVisibility(false);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -174,3 +176,5 @@ ipcMain.handle('project:saveAs', async (_event, payload: { text: string; suggest
   await writeFile(result.filePath, payload.text, 'utf8');
   return { canceled: false, filePath: result.filePath };
 });
+
+ipcMain.handle('app:getVersion', () => app.getVersion());

@@ -20,6 +20,29 @@ const shortcuts = [
 ];
 
 const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
+  const [appVersion, setAppVersion] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    if (!window.electronAPI?.getAppVersion) {
+      setAppVersion(null);
+      return;
+    }
+
+    let isMounted = true;
+    window.electronAPI.getAppVersion()
+      .then(version => {
+        if (isMounted) setAppVersion(version);
+      })
+      .catch(() => {
+        if (isMounted) setAppVersion(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -41,6 +64,16 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
               </kbd>
             </div>
           ))}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-outline-variant/70 text-sm text-on-surface-variant space-y-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-bold text-on-surface">Smart PDF Tagger</span>
+            {appVersion && <span className="text-xs font-medium">v{appVersion}</span>}
+          </div>
+          <p>
+            A focused desktop tool for tagging PDF regions, managing project versions, and exporting annotated PDF, CSV, and project data.
+          </p>
         </div>
       </div>
     </div>

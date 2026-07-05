@@ -14,7 +14,10 @@ test('starts the Electron shell with a secure preload bridge', async () => {
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.openProjectPath)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.saveProject)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.saveProjectAs)).toBe('function');
+  await expect.poll(() => page.evaluate(() => typeof window.electronAPI?.getAppVersion)).toBe('function');
   await expect.poll(() => page.evaluate(() => typeof (window as Window & { require?: unknown }).require)).toBe('undefined');
+
+  await expect.poll(() => page.evaluate(() => window.electronAPI!.getAppVersion())).toMatch(/^\d+\.\d+\.\d+/);
 
   const targetPath = path.join(os.tmpdir(), `smart-pdf-tagger-electron-${Date.now()}.json`);
   const saveResult = await page.evaluate(async (filePath) => {
