@@ -102,6 +102,10 @@ test.describe('PDF annotation workflow', () => {
     const currentPageInput = page.getByLabel('Current page');
     await expect(currentPageInput).toHaveValue('1');
     await expect(page.getByLabel('Page count')).toHaveText('/ 3');
+    await expect(page.getByLabel('Page navigator')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go to page 1' })).toContainText('0 regions');
+    await expect(page.getByRole('button', { name: 'Go to page 2' })).toContainText('0 regions');
+    await expect(page.getByRole('button', { name: 'Go to page 3' })).toContainText('0 regions');
     await expect(page.getByRole('button', { name: 'Previous Page' })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Next Page' })).toBeEnabled();
 
@@ -113,13 +117,22 @@ test.describe('PDF annotation workflow', () => {
     await page.getByPlaceholder('Optional details...').fill('Only visible on page two.');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('[data-testid="region-box"][data-region-page="2"]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Go to page 2' })).toContainText('1 region');
     await expect(page.getByText('PAGE 2')).toBeVisible();
 
     await page.getByRole('button', { name: 'Previous Page' }).click();
     await expect(currentPageInput).toHaveValue('1');
     await expect(page.locator('[data-testid="region-box"]')).toHaveCount(0);
 
+    await page.getByRole('button', { name: 'Go to page 3' }).click();
+    await expect(currentPageInput).toHaveValue('3');
+    await expect(page.getByRole('button', { name: 'Go to page 3' })).toHaveAttribute('aria-current', 'page');
+
+    await page.getByRole('button', { name: 'Go to page 2' }).click();
+    await expect(currentPageInput).toHaveValue('2');
     await page.keyboard.press('PageDown');
+    await expect(currentPageInput).toHaveValue('3');
+    await page.keyboard.press('PageUp');
     await expect(currentPageInput).toHaveValue('2');
     await expect(page.locator('[data-testid="region-box"][data-region-label="Page Two Region"]')).toHaveCount(1);
 

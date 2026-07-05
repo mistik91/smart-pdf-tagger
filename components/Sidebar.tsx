@@ -7,6 +7,7 @@ interface SidebarProps {
   boxes: BoundingBox[];
   filteredBoxes: BoundingBox[];
   currentPage: number;
+  pageCount: number;
   onDeleteBox: (id: string) => void;
   onJumpToPage: (page: number) => void;
   onFocusBox: (id: string) => void;
@@ -28,6 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   boxes,
   filteredBoxes,
   currentPage,
+  pageCount,
   onDeleteBox,
   onJumpToPage,
   onFocusBox,
@@ -75,6 +77,26 @@ const Sidebar: React.FC<SidebarProps> = ({
       return acc;
     }, {} as Record<number, BoundingBox[]>);
   }, [filteredBoxes, sortMode]);
+
+  const pageSummaries = useMemo(() => {
+    const annotationCounts = boxes.reduce((acc, box) => {
+      acc[box.page] = (acc[box.page] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+    const filteredCounts = filteredBoxes.reduce((acc, box) => {
+      acc[box.page] = (acc[box.page] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    return Array.from({ length: Math.max(1, pageCount) }, (_, index) => {
+      const page = index + 1;
+      return {
+        page,
+        annotationCount: annotationCounts[page] || 0,
+        filteredCount: filteredCounts[page] || 0,
+      };
+    });
+  }, [boxes, filteredBoxes, pageCount]);
 
   const handleTagClick = (tag: string) => {
     if (filterText === tag) {
@@ -206,6 +228,40 @@ const Sidebar: React.FC<SidebarProps> = ({
               title={color}
             />
           ))}
+        </div>
+
+        <div className="rounded-xl border border-outline-variant bg-surface/50 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Pages</span>
+            <span className="text-xs text-on-surface-variant">{Math.max(1, pageCount)} total</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2" aria-label="Page navigator">
+            {pageSummaries.map(({ page, annotationCount, filteredCount }) => {
+              const isCurrent = currentPage === page;
+              const hasFilter = Boolean(filterText || selectedColor);
+              const countLabel = hasFilter ? `${filteredCount}/${annotationCount}` : String(annotationCount);
+
+              return (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => onJumpToPage(page)}
+                  aria-label={`Go to page ${page}`}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={`min-h-12 rounded-lg border px-2 py-1.5 text-left transition-all ${isCurrent
+                    ? 'bg-primary text-on-primary border-primary shadow-sm'
+                    : 'bg-surface-container-highest text-on-surface hover:bg-surface-container border-outline-variant'
+                    }`}
+                  title={`Page ${page}: ${annotationCount} region${annotationCount === 1 ? '' : 's'}`}
+                >
+                  <span className="block text-xs font-bold leading-none">P{page}</span>
+                  <span className={`mt-1 inline-flex text-[10px] font-medium ${isCurrent ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
+                    {countLabel} region{annotationCount === 1 ? '' : 's'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {selectedIds.length > 0 && (

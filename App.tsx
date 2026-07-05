@@ -437,6 +437,7 @@ const App: React.FC = () => {
           boxes={boxes}
           filteredBoxes={filteredBoxes}
           currentPage={currentPage}
+          pageCount={pageCount}
           onDeleteBox={deleteBox}
           onJumpToPage={handlePageChange}
           onFocusBox={setActiveBoxId}

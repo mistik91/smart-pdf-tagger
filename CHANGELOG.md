@@ -9,6 +9,7 @@ This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 ### Added
 
 - Robust single-page multipage navigation with previous/next buttons, direct page input, page count display, and keyboard shortcuts.
+- Sidebar page navigator with per-page region counts.
 - Browser end-to-end coverage proving annotations remain scoped to the page where they were created.
 
 ### Verified
