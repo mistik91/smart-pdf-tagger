@@ -12,11 +12,29 @@ const checkForUpdatesOnStartup = async () => {
   if (isDev || !app.isPackaged) return;
 
   const { autoUpdater } = await import('electron-updater');
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('error', error => {
     console.warn('Update check failed:', error);
+  });
+
+  autoUpdater.on('update-available', async updateInfo => {
+    const result = await dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Available',
+      message: `Smart PDF Tagger ${updateInfo.version} is available.`,
+      detail: 'Download the update now? You can keep working while it downloads.',
+      buttons: ['Download Update', 'Not Now'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (result.response === 0) {
+      autoUpdater.downloadUpdate().catch(error => {
+        console.warn('Update download failed:', error);
+      });
+    }
   });
 
   autoUpdater.on('update-downloaded', async () => {
@@ -36,7 +54,7 @@ const checkForUpdatesOnStartup = async () => {
   });
 
   setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify().catch(error => {
+    autoUpdater.checkForUpdates().catch(error => {
       console.warn('Update check failed:', error);
     });
   }, 3000);
