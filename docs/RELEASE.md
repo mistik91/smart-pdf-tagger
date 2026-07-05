@@ -53,8 +53,10 @@ Create a release tag and upload:
 - `Smart PDF Tagger Setup <version>.exe.blockmap`
 - `latest.yml`
 
+Current Windows artifacts use the updater-compatible filename pattern `Smart-PDF-Tagger-Setup-<version>.exe`.
+
 Generated binaries, unpacked app folders, and block maps should not be committed to git.
 
 ## Current Release
 
-The current public release is [v1.2.0](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.2.0).
+The current public release is [v1.2.1](https://github.com/mistik91/smart-pdf-tagger/releases/tag/v1.2.1).

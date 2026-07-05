@@ -4,6 +4,16 @@ All notable changes to Smart PDF Tagger are documented here.
 
 This project follows a simple chronological changelog. Dates use `YYYY-MM-DD`.
 
+## v1.2.1 - 2026-07-05
+
+### Changed
+
+- One-page PDFs now default the left sidebar to the Regions view instead of the Pages view.
+
+### Verified
+
+- TypeScript checks, browser workflow tests with generated PDF fixtures, full installer build, and packaged executable launch.
+
 ## v1.2.0 - 2026-07-05
 
 ### Added
