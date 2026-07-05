@@ -1,13 +1,21 @@
 {
   "name": "smart-pdf-tagger",
   "private": true,
+  "description": "PDF region tagging, project export, and desktop save workflows.",
+  "author": "mistik91",
   "version": "1.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "electron:build": "tsc -p electron/tsconfig.json",
+    "electron:dev": "npm run build && npm run electron:build && electron .",
+    "electron:pack": "npm run build && npm run electron:build && node scripts/electron-builder.mjs --dir",
+    "electron:dist": "npm run build && npm run electron:build && node scripts/electron-builder.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:electron": "npm run build && npm run electron:build && playwright test -c playwright.electron.config.ts",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -28,11 +36,30 @@
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.5.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.13",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.1.5"
+  },
+  "build": {
+    "appId": "com.smartpdftagger.app",
+    "productName": "Smart PDF Tagger",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
   }
 }

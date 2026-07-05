@@ -28,6 +28,14 @@ const isRunningInIframe = () => {
   }
 };
 
+const getProjectDownloadName = (name: string) => `${name}_project.json`;
+
+const cleanJsonFileName = (fileName: string) => {
+  const cleanName = fileName.trim().replace(/[\\/:*?"<>|]+/g, "_");
+  if (!cleanName) return null;
+  return cleanName.toLowerCase().endsWith('.json') ? cleanName : `${cleanName}.json`;
+};
+
 const App: React.FC = () => {
   // 1. Hooks - State Management
   const {
@@ -60,6 +68,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isExportOptionsOpen, setIsExportOptionsOpen] = useState(false);
+  const [electronProjectPath, setElectronProjectPath] = useState<string | null>(null);
 
   // 4. Cloud Provider
   const [activeCloudProviderType, setActiveCloudProviderType] = useState<string>('browser');
@@ -148,6 +157,7 @@ const App: React.FC = () => {
     if (!project) {
       await initializeProjectFromPdf(file);
       setBoxes([]); // Clear boxes for new project
+      setElectronProjectPath(null);
       e.target.value = '';
       return;
     }
@@ -165,6 +175,21 @@ const App: React.FC = () => {
   };
 
   const handleOpenProjectWrapped = async () => {
+    if (window.electronAPI) {
+      try {
+        const result = await window.electronAPI.openProject();
+        if (result.canceled || !result.text) return;
+
+        const data = parseProjectJson(result.text);
+        const loadedBoxes = await loadProject(data, null);
+        setBoxes(loadedBoxes);
+        setElectronProjectPath(result.filePath || null);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Could not open project file.");
+      }
+      return;
+    }
+
     const triggerInputFallback = () => {
       const input = document.createElement('input');
       input.type = 'file';
@@ -183,6 +208,7 @@ const App: React.FC = () => {
                 const data = parseProjectJson(res);
                 const loadedBoxes = await loadProject(data, null);
                 setBoxes(loadedBoxes);
+                setElectronProjectPath(null);
               } catch (error) {
                 alert(error instanceof Error ? error.message : "Could not open project file.");
               }
@@ -208,6 +234,7 @@ const App: React.FC = () => {
         const data = parseProjectJson(text);
         const loadedBoxes = await loadProject(data, handle);
         setBoxes(loadedBoxes);
+        setElectronProjectPath(null);
       } catch (e) {
         if (e instanceof Error && e.name !== 'AbortError') {
           alert(e.message);
@@ -243,17 +270,52 @@ const App: React.FC = () => {
 
   const handleSaveAsProject = async () => {
     if (!project) return;
-    const suggestedName = `${project.name}_project.json`;
+    const syncedProject = buildSyncedProject(project, boxes);
+    const suggestedName = getProjectDownloadName(syncedProject.name);
+
+    if (window.electronAPI) {
+      const result = await window.electronAPI.saveProjectAs({
+        text: JSON.stringify(syncedProject, null, 2),
+        suggestedName,
+      });
+      if (!result.canceled && result.filePath) {
+        setProject(syncedProject);
+        setElectronProjectPath(result.filePath);
+      }
+      return;
+    }
+
     const requestedName = window.prompt("Save project as", suggestedName);
     if (!requestedName) return;
 
-    const cleanName = requestedName.trim().replace(/[\\/:*?"<>|]+/g, "_");
+    const cleanName = cleanJsonFileName(requestedName);
     if (!cleanName) return;
 
     await saveProject(boxes, {
       saveAs: true,
-      fileName: cleanName.toLowerCase().endsWith('.json') ? cleanName : `${cleanName}.json`,
+      fileName: cleanName,
     });
+  };
+
+  const handleSaveProject = async () => {
+    if (!project) return;
+
+    if (window.electronAPI) {
+      const syncedProject = buildSyncedProject(project, boxes);
+      const result = await window.electronAPI.saveProject({
+        filePath: electronProjectPath || undefined,
+        text: JSON.stringify(syncedProject, null, 2),
+        suggestedName: getProjectDownloadName(syncedProject.name),
+      });
+
+      if (!result.canceled) {
+        setProject(syncedProject);
+        if (result.filePath) setElectronProjectPath(result.filePath);
+      }
+      return;
+    }
+
+    await saveProject(boxes);
   };
 
   // -- Render --
@@ -330,7 +392,7 @@ const App: React.FC = () => {
         scale={scale} onZoom={(s) => setScale(Math.min(3, Math.max(0.5, s)))}
         tool={tool} setTool={setTool}
         isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
-        onSave={() => saveProject(boxes)}
+        onSave={handleSaveProject}
         onOpen={handleOpenProjectWrapped}
         onExportPdf={() => setIsExportOptionsOpen(true)}
         onExportJson={handleSaveAsProject}

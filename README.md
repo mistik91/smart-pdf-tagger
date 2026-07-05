@@ -1,8 +1,8 @@
 # Smart PDF Tagger
 
-Smart PDF Tagger is a browser-based React app for marking regions in PDF files, naming those regions, assigning colors and tags, and exporting the result as project JSON, CSV, or an annotated PDF.
+Smart PDF Tagger is a React app for marking regions in PDF files, naming those regions, assigning colors and tags, and exporting the result as project JSON, CSV, or an annotated PDF.
 
-The project is intentionally **web-only** right now. Electron packaging was removed so the app can stabilize first; desktop packaging can be reintroduced later from a clean baseline.
+The app runs in the browser during normal development and also has a conservative Electron desktop shell for native project open, save, and Save As dialogs.
 
 ## Features
 
@@ -20,6 +20,7 @@ The project is intentionally **web-only** right now. Electron packaging was remo
 - Export annotations to CSV with selectable fields.
 - Export annotated PDFs with configurable labels, comments, and colors.
 - Use Browser Storage for local project persistence.
+- Run as a desktop app with native project open, save, and Save As dialogs.
 - Optionally use Gemini to suggest labels for selected PDF regions.
 - Use OneDrive for account-backed project storage when configured.
 
@@ -31,6 +32,7 @@ The project is intentionally **web-only** right now. Electron packaging was remo
 - Tailwind CSS
 - PDF.js for rendering
 - pdf-lib for PDF export
+- Electron and electron-builder for the desktop shell
 - Vitest and Testing Library for unit/smoke tests
 - Playwright for real-browser PDF workflow tests
 
@@ -68,6 +70,33 @@ Open the local URL printed by Vite, usually:
 http://localhost:3000
 ```
 
+## Desktop App
+
+Build the web app, compile the Electron main/preload files, and open the desktop app:
+
+```bash
+npm run electron:dev
+```
+
+Create an unpacked local desktop build:
+
+```bash
+npm run electron:pack
+```
+
+Create a distributable installer package:
+
+```bash
+npm run electron:dist
+```
+
+Desktop package output defaults to a temporary `smart-pdf-tagger-release` folder so Windows-controlled workspace folders do not block Electron Builder's final rename step. Set `ELECTRON_BUILDER_OUTPUT` to choose another output folder:
+
+```bash
+$env:ELECTRON_BUILDER_OUTPUT="E:\Documents\Codex\smart-pdf-tagger\release"
+npm run electron:pack
+```
+
 ## Quality Checks
 
 Run the full pre-upload check set:
@@ -77,6 +106,7 @@ npm run test
 npm run typecheck
 npm run build
 npm run test:browser
+npm run test:electron
 npm audit --audit-level=moderate
 ```
 
@@ -87,12 +117,16 @@ $env:SMART_PDF_TEST_FILE="E:\Downloads\your-file.pdf"
 npm run test:browser
 ```
 
+`npm run test:electron` builds the app, launches Electron with Playwright, verifies the preload bridge, and checks native project-save IPC without exposing Node.js to the renderer.
+
 ## Project Structure
 
 ```text
 assets/          Static visual assets
 components/      React UI components
 e2e/             Playwright browser workflow tests
+e2e-electron/    Playwright Electron smoke tests
+electron/        Electron main process and preload bridge
 hooks/           React state/model hooks
 services/        PDF export, cloud, and AI service adapters
 test/            Vitest setup
@@ -117,17 +151,25 @@ The Playwright suite exercises real PDF workflows:
 - duplicate-label blocking
 - friendly errors for invalid project/template JSON imports
 
+## Electron Design
+
+- `electron/main.ts` owns the desktop window and native file dialogs.
+- `electron/preload.cts` exposes a narrow `window.electronAPI` bridge for project open, save, and Save As.
+- The React renderer detects the bridge and falls back to browser downloads/uploads when it is not present.
+- The desktop window keeps `contextIsolation` enabled and `nodeIntegration` disabled.
+- External links are handed to the operating system shell instead of opening inside the app window.
+
 ## GitHub Upload Checklist
 
-1. Run the full quality checks above.
-2. Confirm `.env.local`, `node_modules`, `dist`, `test-results`, and Playwright reports are not staged.
+1. Run the full quality checks above, including `npm run test:electron`.
+2. Confirm `.env.local`, `node_modules`, `dist`, `dist-electron`, `release`, `desktop-pack-test`, `test-results`, and Playwright reports are not staged.
 3. Initialize git if needed:
 
 ```bash
 git init
 git add .
 git status
-git commit -m "Initial web app baseline"
+git commit -m "Initial app baseline"
 ```
 
 4. Create an empty GitHub repository.
@@ -146,4 +188,4 @@ git push -u origin main
 - OneDrive depends on a valid Microsoft app registration and redirect URI.
 - Gemini labeling requires network access and a configured API key.
 - Template fields are edited in Settings and saved in browser localStorage.
-- No Electron files are currently part of the app.
+- `dist-electron/`, `release/`, and temporary desktop package outputs are generated build outputs and should stay uncommitted.
